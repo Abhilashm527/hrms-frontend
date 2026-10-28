@@ -1,0 +1,16 @@
+# Render blueprint: the web app as a free static site.
+# Requests to /api/* are passed through to the API, so the browser sees one address
+# (the sign-in cookie is SameSite=Strict and would not be sent to a different site).
+services:
+  - type: web
+    name: hrms-web
+    runtime: static
+    buildCommand: echo "nothing to build yet"   # replace with the real build, e.g. npm ci && npm run build
+    staticPublishPath: ./public                 # replace with the build output folder, e.g. ./dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://hrms-api.onrender.com/api/*   # use your API's real address
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,0 +1,215 @@
+/* =====================================================================
+   Ivoyant Dataflux — Design Tokens v2
+   Clean, minimal, fresh-start palette. Same variable names as before —
+   every consuming file keeps working unchanged.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ============================ COLOR ============================ */
+
+  /* --- Brand ---------------------------------------------------- */
+  --brand:           #1F4FE0;   /* royal blue — CTAs, logo, focus */
+  --brand-hover:     #1A44C7;
+  --brand-press:     #163CB0;
+  --brand-tint:      #EBF1FF;
+  --brand-tint-2:    #DCE6FF;
+  --brand-fg-on:     #FFFFFF;
+
+  /* --- Surfaces ------------------------------------------------- */
+  --bg:              #FFFFFF;
+  --bg-2:            #FAFAFA;   /* neutral off-white sidebar / sunken panels */
+  --bg-3:            #F4F5F7;   /* search field, inactive chip bg */
+  --bg-overlay:      rgba(15, 23, 42, 0.40);
+
+  /* --- Foreground / text --------------------------------------- */
+  --fg-1:            #0F172A;   /* primary text — slate near-black */
+  --fg-2:            #475569;   /* secondary text — slate */
+  --fg-3:            #94A3B8;   /* tertiary / placeholder */
+  --fg-4:            #CBD5E1;   /* disabled / hairline glyph */
+  --fg-on-brand:     #FFFFFF;
+
+  /* --- Borders -------------------------------------------------- */
+  --border:          #E5E7EB;
+  --border-strong:   #D1D5DB;
+  --border-subtle:   #EEF0F3;
+
+  /* --- Semantic ------------------------------------------------- */
+  --success:         #15803D;
+  --success-bg:      #ECFDF3;
+  --success-fg:      #146534;
+
+  --warning:         #B45309;
+  --warning-bg:      #FEF6E7;
+  --warning-fg:      #92400E;
+
+  --danger:          #B91C1C;
+  --danger-bg:       #FEF2F2;
+  --danger-fg:       #991B1B;
+
+  --info:            #1D4ED8;
+  --info-bg:         #EFF4FE;
+  --info-fg:         #1E40AF;
+
+  /* --- AI accent (sparkle, "AI assist" card) -------------------- */
+  --ai:              #A6580C;   /* warm amber, distinct from brand teal */
+  --ai-tint:         #FBF0E1;
+  --ai-glow:         radial-gradient(circle at 30% 30%, #F4CA92 0%, #FBF0E1 60%, #FFFFFF 100%); /* @kind color */
+
+  /* --- State overlays ------------------------------------------ */
+  --state-hover:     rgba(15, 23, 42, 0.04);
+  --state-press:     rgba(15, 23, 42, 0.08);
+  --state-focus:     rgba(31, 79, 224, 0.20);
+
+  /* ============================ TYPE ============================ */
+  --font-sans:       'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:       'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Base */
+  --fz-xs:           11px;
+  --fz-sm:           12px;
+  --fz-base:         13px;
+  --fz-md:           14px;
+  --fz-lg:           16px;
+  --fz-xl:           20px;
+  --fz-2xl:          24px;
+  --fz-3xl:          32px;
+
+  --lh-tight:        1.2;   /* @kind font */
+  --lh-snug:         1.4;   /* @kind font */
+  --lh-base:         1.55;  /* @kind font */
+  --lh-relaxed:      1.7;   /* @kind font */
+
+  --tracking-tight:  -0.01em;
+  --tracking-base:   0em;
+  --tracking-wide:   0.06em;
+  --tracking-caps:   0.04em;
+
+  /* =========================== SPACING =========================== */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+
+  /* ============================ RADIUS ========================== */
+  /* Clean minimal: softer, larger corners than the old compact-enterprise look. */
+  --r-xs:    4px;
+  --r-sm:    8px;
+  --r-md:    10px;
+  --r-lg:    14px;
+  --r-pill:  999px;
+
+  /* ============================ SHADOW ========================== */
+  --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md:  0 6px 16px rgba(15, 23, 42, 0.07),
+                0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-lg:  0 20px 48px rgba(15, 23, 42, 0.12),
+                0 6px 16px rgba(15, 23, 42, 0.06);
+  --shadow-focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--state-focus);
+
+  /* ============================ LAYOUT ========================== */
+  --sidebar-w:        260px;
+  --sidebar-collapsed: 60px;
+  --topbar-h:         56px;
+
+  /* ============================ MOTION ========================== */
+  --ease:           cubic-bezier(0.2, 0, 0, 1);    /* @kind other */
+  --ease-out:       cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --dur-fast:       120ms; /* @kind other */
+  --dur-base:       180ms; /* @kind other */
+  --dur-slow:       260ms; /* @kind other */
+}
+
+/* =====================================================================
+   Semantic element styles (use these directly in product HTML)
+   ===================================================================== */
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--fz-md);
+  line-height: var(--lh-base);
+  color: var(--fg-1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 {
+  font-size: var(--fz-3xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-tight);
+  margin: 0;
+}
+h2, .h2 {
+  font-size: var(--fz-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-snug);
+  margin: 0;
+}
+h3, .h3 {
+  font-size: var(--fz-xl);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  margin: 0;
+}
+h4, .h4 {
+  font-size: var(--fz-lg);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  margin: 0;
+}
+
+.page-title {
+  font-size: var(--fz-xl);
+  font-weight: 600;
+  color: var(--fg-1);
+  text-transform: lowercase;
+  letter-spacing: var(--tracking-tight);
+}
+
+.eyebrow {
+  font-size: var(--fz-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-3);
+  text-transform: uppercase;
+}
+
+.label-caps {
+  font-size: var(--fz-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+p, .body {
+  font-size: var(--fz-md);
+  line-height: var(--lh-base);
+  color: var(--fg-1);
+  margin: 0;
+}
+
+.body-secondary {
+  font-size: var(--fz-md);
+  color: var(--fg-2);
+}
+
+.caption {
+  font-size: var(--fz-sm);
+  color: var(--fg-3);
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}

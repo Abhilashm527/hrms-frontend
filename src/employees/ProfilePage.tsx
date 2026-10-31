@@ -11,6 +11,8 @@ import { ConfigInput } from '../onboarding/shared';
 import { employeesApi, type Profile, type ProfileField, type ProfileSection } from './api';
 import { DocumentsTab } from './DocumentsTab';
 import { useAuth } from '../auth/AuthProvider';
+import { assetApi } from '../assets/api';
+import { MineView } from '../assets/MyAssetsPage';
 import { BlockLoader } from '../components/Splash';
 
 const STATUS_PILL: Record<string, string> = { healthy: 'pill-ok', active: 'pill-ok', pending: 'pill-warn', degraded: 'pill-danger', failed: 'pill-danger' };
@@ -142,6 +144,7 @@ export function ProfilePage() {
         </>
       )}
       {cur === 'documents' && <DocumentsTab p={p} />}
+      {cur === 'assets' && <AssetsTab id={p.id} />}
 
       {toast && (
         <div className="toast" role="status">
@@ -451,4 +454,11 @@ function CompensationTab({ p }: { p: Profile }) {
       )}
     </div>
   );
+}
+
+function AssetsTab({ id }: { id: string }) {
+  const q = useQuery({ queryKey: ['assets', 'employee', id], queryFn: () => assetApi.ofEmployee(id) });
+  if (q.isLoading) return <BlockLoader label="Loading assets…" height={200} />;
+  if (q.isError || !q.data) return <Alert>{errorText(q.error)}</Alert>;
+  return <MineView data={q.data} />;
 }

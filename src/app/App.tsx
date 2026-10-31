@@ -25,6 +25,10 @@ import { AreaOwnersPage, EffectivePage, FieldSecurityPage } from '../access/Acce
 import { ACCESS_GROUPS, AccessComingNext, CONFIG_GROUPS, SectionLayout } from '../settings/SettingsLayout';
 import { LeavePage } from '../leave/LeavePage';
 import { CalendarPage } from '../calendar/CalendarPage';
+import { InboxPage } from '../requests/InboxPage';
+import { MyRequestsPage } from '../requests/MyRequestsPage';
+import { AssetsPage } from '../assets/AssetsPage';
+import { MyAssetsPage } from '../assets/MyAssetsPage';
 import { ApprovalChainPage } from '../settings/leave/ApprovalChainPage';
 import { HolidayTypesPage } from '../settings/leave/HolidayTypesPage';
 import { LeavePolicyPage } from '../settings/leave/LeavePolicyPage';
@@ -56,6 +60,10 @@ export function App() {
           <Route path="/directory" element={<EmployeesPage />} />
           <Route path="/leave" element={<LeavePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/inbox" element={<InboxPage />} />
+          <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/me/assets" element={<MyAssetsPage />} />
+          <Route path="/me/requests" element={<MyRequestsPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/onboarding/:hireId" element={<OnboardingPage />} />
           <Route path="/configuration" element={<SectionLayout groups={CONFIG_GROUPS} />}>

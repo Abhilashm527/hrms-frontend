@@ -24,6 +24,7 @@ export const ADMIN_NAV: NavGroup[] = [
       { path: '/policies', label: 'Policies', icon: Icon.file },
       { path: '/documents', label: 'Documents', icon: Icon.file },
       { path: '/reports', label: 'Reports', icon: Icon.chart },
+      { path: '/configuration', label: 'Configuration', icon: Icon.sliders },
       { path: '/settings', label: 'Settings & roles', icon: Icon.settings },
     ],
   },

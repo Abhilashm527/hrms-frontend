@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthProvider';
 import { Icon } from '../components/icons';
+import { BlockLoader, Loader } from '../components/Splash';
 import { ApiError, get } from '../lib/http';
 import { date, greeting, longDate } from '../lib/format';
 
@@ -92,7 +93,14 @@ function Kpi({ label, icon, tone, value, sub, loading }: { label: string; icon: 
           {icon}
         </span>
       </div>
-      {loading ? <span className="skeleton" style={{ height: 30, width: 70, marginTop: 6 }} /> : <span className="kpi-val">{value ?? '—'}</span>}
+      {loading ? (
+        <span className="kpi-loading" role="status">
+          <Loader size={22} label={`Loading ${label.toLowerCase()}`} />
+          Loading…
+        </span>
+      ) : (
+        <span className="kpi-val">{value ?? '—'}</span>
+      )}
       <span className="kpi-sub">{loading ? ' ' : sub}</span>
     </div>
   );
@@ -105,13 +113,7 @@ function Card({ title, action, q, children }: { title: string; action?: ReactNod
         <span>{title}</span>
         {action}
       </div>
-      {q.isLoading &&
-        [0, 1, 2].map((i) => (
-          <div className="list-row" key={i}>
-            <span className="skeleton" style={{ width: 30, height: 30, borderRadius: 999 }} />
-            <span className="skeleton" style={{ flex: 1, height: 14 }} />
-          </div>
-        ))}
+      {q.isLoading && <BlockLoader height={150} size={28} label={`Loading ${title.toLowerCase()}…`} />}
       {q.error && (
         <div className="card-empty">
           {q.error.message}{' '}

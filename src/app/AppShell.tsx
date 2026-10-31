@@ -22,10 +22,14 @@ export function AppShell() {
     }
   });
   const [menu, setMenu] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+
+  // On small screens the menu slides in; close it after moving to another page.
+  useEffect(() => setNavOpen(false), [loc.pathname]);
   const [account, setAccount] = useState(false);
 
   useEffect(() => {
-    const item = allItems(groups).find((i) => i.path === loc.pathname);
+    const item = allItems(groups).find((i) => i.path === loc.pathname) ?? allItems(groups).find((i) => i.path !== '/' && loc.pathname.startsWith(i.path + '/'));
     document.title = `${item?.label ?? 'iHRMS'} · Ivoyant HRMS`;
   }, [loc.pathname, groups]);
 
@@ -46,6 +50,9 @@ export function AppShell() {
     <div className="dfx-shell">
       <header className="dfx-ghead">
         <div className="dfx-ghead-side">
+          <button type="button" className="dfx-icon-btn nav-btn" onClick={() => setNavOpen((o) => !o)} aria-label="Menu" aria-expanded={navOpen}>
+            {navOpen ? Icon.close : Icon.menu}
+          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Logo size={22} />
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)', letterSpacing: '-0.01em' }}>ivoyant</span>
@@ -116,7 +123,8 @@ export function AppShell() {
         </div>
       </header>
 
-      <div className={`dfx-app${collapsed ? ' sb-collapsed' : ''}`}>
+      <div className={`dfx-app${collapsed ? ' sb-collapsed' : ''}${navOpen ? ' nav-open' : ''}`}>
+        <div className="nav-scrim" onClick={() => setNavOpen(false)} />
         <aside className={`dfx-sidebar${collapsed ? ' collapsed' : ''}`}>
           <button className="dfx-sb-toggle" type="button" onClick={toggleSb} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
             {collapsed ? Icon.chevR : Icon.chevL}

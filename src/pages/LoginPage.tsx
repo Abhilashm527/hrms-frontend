@@ -73,6 +73,7 @@ export function LoginPage() {
   };
 
   const login = useMutation({
+    meta: { busy: 'Signing in…' },
     mutationFn: () => authApi.login(email.trim(), password, remember),
     onSuccess: (r: LoginResult) => {
       setErr(null);
@@ -97,6 +98,7 @@ export function LoginPage() {
   });
 
   const verify = useMutation({
+    meta: { busy: 'Checking your code…' },
     mutationFn: ({ challengeId, c }: { challengeId: string; c: string }) => authApi.verifyMfa(challengeId, c),
     onSuccess: (body) => finish(body),
     onError: (e) => {
@@ -109,6 +111,7 @@ export function LoginPage() {
   });
 
   const forgot = useMutation({
+    meta: { busy: 'Sending the reset link…' },
     mutationFn: () => authApi.forgot(email.trim()),
     onSuccess: () => setStep({ kind: 'sent' }),
     onError: (e) => setErr(e.message),

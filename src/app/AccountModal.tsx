@@ -4,15 +4,17 @@ import { useAuth } from '../auth/AuthProvider';
 import { authApi } from '../auth/api';
 import { Alert } from '../components/Alert';
 import { Icon } from '../components/icons';
+import { Overlay } from '../components/Overlay';
 import { ago, dateTime } from '../lib/format';
+import { BlockLoader } from '../components/Splash';
 
 /** My account → security: sign-in method, two-step status and the devices signed in, with sign-out per device. */
 export function AccountModal({ onClose }: { onClose: () => void }) {
   const { user, me } = useAuth();
   const qc = useQueryClient();
   const sessions = useQuery({ queryKey: ['me', 'sessions'], queryFn: authApi.sessions });
-  const end = useMutation({ mutationFn: authApi.endSession, onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'sessions'] }) });
-  const endOthers = useMutation({ mutationFn: authApi.endOtherSessions, onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'sessions'] }) });
+  const end = useMutation({ meta: { busy: 'Signing out that session…' }, mutationFn: authApi.endSession, onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'sessions'] }) });
+  const endOthers = useMutation({ meta: { busy: 'Signing out your other sessions…' }, mutationFn: authApi.endOtherSessions, onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'sessions'] }) });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -24,6 +26,7 @@ export function AccountModal({ onClose }: { onClose: () => void }) {
   const amr = me?.amr ?? [];
 
   return (
+    <Overlay>
     <div className="modal-scrim" onClick={onClose}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="acct-title" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
@@ -72,7 +75,7 @@ export function AccountModal({ onClose }: { onClose: () => void }) {
           </div>
           {(end.error || endOthers.error) && <Alert>{(end.error ?? endOthers.error)!.message}</Alert>}
           <div className="card">
-            {sessions.isLoading && <div className="card-empty">Loading…</div>}
+            {sessions.isLoading && <BlockLoader height={100} size={24} label="Loading your sessions…" />}
             {sessions.isError && <div className="card-empty">{sessions.error.message}</div>}
             {sessions.data?.map((s) => (
               <div className="list-row" key={s.id}>
@@ -100,5 +103,6 @@ export function AccountModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }

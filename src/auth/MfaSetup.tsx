@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Alert } from '../components/Alert';
 import { Icon } from '../components/icons';
+import { BlockLoader } from '../components/Splash';
 import { ApiError } from '../lib/http';
 import type { SignedIn } from '../lib/session';
 import { authApi } from './api';
@@ -23,6 +24,7 @@ export function MfaSetup({ enrollToken, email, onDone, onExpired }: { enrollToke
   }, [start.error, onExpired]);
 
   const confirm = useMutation({
+    meta: { busy: 'Checking your code…' },
     mutationFn: (c: string) => authApi.enrollConfirm(enrollToken, c),
     onSuccess: (body) => onDone(body, Date.now()),
     onError: (e) => {
@@ -60,7 +62,7 @@ export function MfaSetup({ enrollToken, email, onDone, onExpired }: { enrollToke
       {start.isError && !(start.error instanceof ApiError && start.error.status === 410) && <Alert>{start.error.message}</Alert>}
       <div className="qr-row">
         <div className="qr" aria-label="QR code for your authenticator app">
-          {start.data ? <span dangerouslySetInnerHTML={{ __html: start.data.qrSvg }} style={{ width: '100%', height: '100%' }} /> : <div className="skeleton" style={{ width: '100%', height: '100%' }} />}
+          {start.data ? <span dangerouslySetInnerHTML={{ __html: start.data.qrSvg }} style={{ width: '100%', height: '100%' }} /> : <BlockLoader height={0} size={28} label="Preparing your QR code…" />}
         </div>
         <div className="qr-side">
           <ol>

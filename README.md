@@ -20,6 +20,15 @@ Set `HRMS_API_URL` in `.env.local` to point the proxy at another API (for exampl
 - **Emailed links**: `/#reset?token=…` and `/#activate?token=…` from the API become `/reset-password` and `/activate`; the token is removed from the address bar on load.
 - **App shell + dashboard** from the UX: header, collapsible sidebar (admin or self-service menu from `/auth/me`), theme (auto/light/dark), My account (two-step status, active sessions, sign out other devices).
 
+## Onboarding
+
+- **`/onboarding`** (HR): pipeline tiles, filters (kept in the URL), table, and **New hire** — a wizard built from the API's `/onboarding/hire-form` steps (Personal, Job, Microsoft 365, Invite with document picker and live email preview).
+- **`/onboarding/:id`**: hire page with stage tracker; create the work account, send/resend the invite, verify or reject documents, checklist, activity, **Mark as joined** (or join early with a reason), cancel.
+- **`/portal?token=…`**: the new hire's page from the invite email — fill in details, upload documents (PDF/JPG/PNG, 6 MB), submit for review. Links to `/onboarding?token=…` (the API's default portal URL) are sent here.
+- Microsoft 365 is simulated by the API until a real Graph client exists; the hire page says so.
+
+On the API set `HRMS_ONBOARDING_PORTAL_URL` to `<this site>/portal` (or leave the default path `/onboarding`, which also works).
+
 ## Session handling
 
 | Concern | How |

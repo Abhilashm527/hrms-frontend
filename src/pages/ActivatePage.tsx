@@ -21,6 +21,7 @@ export function ActivatePage() {
   const info = useQuery({ queryKey: ['activate', token], queryFn: () => authApi.activateInfo(token), enabled: !!token, retry: false, gcTime: 0 });
 
   const activate = useMutation({
+    meta: { busy: 'Activating your account…' },
     mutationFn: () => authApi.activate(token, info.data?.needsPassword ? pw : null),
     onSuccess: (r) => (r.status === 'OK' ? session.accept(r) : setStep({ kind: 'enroll', enrollToken: r.enrollToken })),
     onError: (e) => setErr(e.message),

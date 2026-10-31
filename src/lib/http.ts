@@ -18,8 +18,8 @@ const BASE = '/api/v1';
 
 async function send(path: string, opts: Options, token: string | null): Promise<Response> {
   const headers = new Headers(opts.headers);
-  headers.set('Accept', 'application/json');
-  if (opts.body !== undefined && !(opts.body instanceof FormData)) {
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+  if (opts.body !== undefined && !(opts.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {
@@ -74,6 +74,38 @@ export async function api<T>(path: string, opts: Options = {}): Promise<T> {
   return (type.includes('json') ? res.json() : res.text()) as Promise<T>;
 }
 
+/** A file from the API (documents, exports), fetched with the access token so it can be shown or saved. */
+export async function blob(path: string): Promise<Blob> {
+  const opts = { method: 'GET', headers: { Accept: '*/*' } };
+  let res = await send(path, opts, accessToken() ?? (await refresh())?.token ?? null);
+  if (res.status === 401) {
+    res = await send(path, opts, (await refresh())?.token ?? null);
+  }
+  if (!res.ok) throw await toError(res);
+  return res.blob();
+}
+
+/** The most useful message in an error: the first field problem of a 422, else the message. */
+export function errorText(e: unknown): string {
+  if (e instanceof ApiError && Array.isArray(e.extra.errors) && e.extra.errors.length) {
+    const first = (e.extra.errors as { message?: string }[])[0]?.message;
+    if (first) return first;
+  }
+  return e instanceof Error ? e.message : 'Something went wrong';
+}
+
+/** Field-level problems from a 422 answer, by field key. */
+export function fieldErrors(e: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (e instanceof ApiError && Array.isArray(e.extra.errors)) {
+    for (const it of e.extra.errors as { fieldKey?: string; message?: string }[]) {
+      if (it.fieldKey && it.message) out[it.fieldKey] = it.message;
+    }
+  }
+  return out;
+}
+
 export const get = <T>(path: string, opts?: Options) => api<T>(path, { ...opts, method: 'GET' });
 export const post = <T>(path: string, body?: unknown, opts?: Options) => api<T>(path, { ...opts, method: 'POST', body: body ?? {} });
 export const del = <T>(path: string, opts?: Options) => api<T>(path, { ...opts, method: 'DELETE' });
+export const patch = <T>(path: string, body: unknown, opts?: Options) => api<T>(path, { ...opts, method: 'PATCH', body });

@@ -25,14 +25,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    let had = session.current() !== null;
     const off = session.subscribe((s, reason) => {
       setState(s);
       setStatus(s ? 'signed-in' : 'signed-out');
-      if (!s) {
-        // Nothing cached for one user may be shown to the next.
-        queryClient.clear();
-        if (reason) setNotice(reason);
+      if (!s && had) {
+        // Nothing cached for one user may be shown to the next. The new-hire portal isn't tied to a sign-in, so it stays.
+        queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'portal' && !(q.queryKey[0] === 'auth' && q.queryKey[1] === 'config') });
       }
+      if (!s && reason) setNotice(reason);
+      had = s !== null;
     });
     // Restore the session from the refresh cookie (page load, new tab, back from Microsoft).
     if (session.current()) {

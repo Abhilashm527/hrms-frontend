@@ -14,7 +14,7 @@ export function ResetPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const info = useQuery({ queryKey: ['reset', token], queryFn: () => authApi.resetInfo(token), enabled: !!token, retry: false, gcTime: 0 });
-  const reset = useMutation({ mutationFn: () => authApi.reset(token, pw), onError: (e) => setErr(e.message) });
+  const reset = useMutation({ meta: { busy: 'Setting your new password…' }, mutationFn: () => authApi.reset(token, pw), onError: (e) => setErr(e.message) });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

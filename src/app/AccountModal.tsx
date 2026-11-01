@@ -53,7 +53,7 @@ export function AccountModal({ onClose }: { onClose: () => void }) {
                 <b>Two-step verification</b>
                 <span>Authenticator app{me?.landing === 'ADMIN' ? ' · required for admins' : ''}</span>
               </span>
-              <span className={`pill ${me?.security.mfaEnrolled ? 'pill-ok' : 'pill-warn'}`}>{me?.security.mfaEnrolled ? 'On' : 'Off'}</span>
+              <span className={`pill ${me?.security?.mfaEnrolled ? 'pill-ok' : 'pill-warn'}`}>{me?.security?.mfaEnrolled ? 'On' : 'Off'}</span>
             </div>
             <div className="list-row">
               <span className="txt">

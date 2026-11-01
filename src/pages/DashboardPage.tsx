@@ -44,7 +44,7 @@ export function DashboardPage() {
           <Kpi label="Joining in 30 days" icon={Icon.userPlus} tone="#16A34A" loading={hires.isLoading} value={hires.data?.counts.joining30} sub={hires.data && `${hires.data.counts.joiningWeek} this week · ${hires.data.counts.attention} need attention`} />
         )}
         {admin && !hidden(hires.error) && <Kpi label="In onboarding" icon={Icon.briefcase} tone="#D97706" loading={hires.isLoading} value={hires.data?.counts.inPipeline} sub="offers accepted, not yet joined" />}
-        <Kpi label="Two-step" icon={Icon.shield} tone="#7C3AED" loading={!me} value={me?.security.mfaEnrolled ? 'On' : 'Off'} sub={me?.amr.includes('otp') ? 'verified this session' : 'not used this session'} />
+        <Kpi label="Two-step" icon={Icon.shield} tone="#7C3AED" loading={!me} value={me?.security?.mfaEnrolled ? 'On' : 'Off'} sub={me?.amr.includes('otp') ? 'verified this session' : 'not used this session'} />
       </div>
 
       <div className="grid-2">

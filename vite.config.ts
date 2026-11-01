@@ -7,7 +7,18 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const target = env.HRMS_API_URL || 'https://hrms-api-haqa.onrender.com';
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        // A production build must never load the local test helper; stop the build if index.html still references it.
+        name: 'no-test-mock',
+        apply: 'build',
+        transformIndexHtml(html: string) {
+          if (html.includes('__mock')) throw new Error('index.html still loads /__mock.js (local test helper). Remove that line before building.');
+          return html;
+        },
+      },
+    ],
     server: {
       port: 5173,
       strictPort: true,

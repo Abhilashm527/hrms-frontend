@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Icon, Logo } from '../components/icons';
 import { ThemeButton } from '../components/ThemeButton';
 import { useTheme, type ThemeMode } from '../lib/theme';
 import { AccountModal } from './AccountModal';
+import { useMyNav } from '../access/api';
 import { ADMIN_NAV, ESS_NAV, allItems } from './nav';
 
 const SB_KEY = 'ivy-hrms-sb';
@@ -12,8 +13,19 @@ const SB_KEY = 'ivy-hrms-sb';
 export function AppShell() {
   const { user, me, landing, signOut } = useAuth();
   const admin = (me?.consoleAccess ?? landing === 'ADMIN') === true;
-  const groups = admin ? ADMIN_NAV : ESS_NAV;
   const loc = useLocation();
+  const myNav = useMyNav();
+  // Menus switched off in Module permissions drop out; until the answer arrives (or if it fails) everything shows.
+  const groups = useMemo(() => {
+    const all = admin ? ADMIN_NAV : ESS_NAV;
+    const on = myNav.data ? new Set(myNav.data.menus) : null;
+    return on ? all.map((g) => ({ ...g, items: g.items.filter((i) => on.has(i.key)) })).filter((g) => g.items.length) : all;
+  }, [admin, myNav.data]);
+  const blocked = useMemo(() => {
+    if (!myNav.data) return null;
+    const on = new Set(myNav.data.menus);
+    return allItems(admin ? ADMIN_NAV : ESS_NAV).find((i) => i.path !== '/' && (loc.pathname === i.path || loc.pathname.startsWith(i.path + '/')) && !on.has(i.key)) ?? null;
+  }, [admin, myNav.data, loc.pathname]);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SB_KEY) === '1';
@@ -180,7 +192,15 @@ export function AppShell() {
             <Logo />
           </div>
           <div className="dfx-content page">
-            <Outlet />
+            {blocked ? (
+              <div className="card" style={{ padding: '32px 24px', gap: 8, alignItems: 'flex-start' }}>
+                <span className="icon-circle">{Icon.shield}</span>
+                <b style={{ fontSize: 16, color: 'var(--fg-1)' }}>{blocked.label} isn’t available to you</b>
+                <span style={{ fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>Your roles don’t include this menu. Ask an HR admin if you need it.</span>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </main>
       </div>

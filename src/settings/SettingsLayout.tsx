@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useMyNav } from '../access/api';
 import { Icon } from '../components/icons';
 
 type Item = { path?: string; label: string; icon: ReactNode };
@@ -65,19 +66,23 @@ export const ACCESS_GROUPS: Group[] = [
     label: 'Access',
     items: [
       { path: '/settings/roles', label: 'Roles & permissions', icon: Icon.shield },
-      { label: 'Module permissions', icon: Icon.dash },
+      { path: '/settings/module-permissions', label: 'Module permissions', icon: Icon.dash },
       { path: '/settings/assignments', label: 'Role assignments', icon: Icon.users },
       { path: '/settings/field-security', label: 'Field security', icon: Icon.shield },
       { path: '/settings/effective', label: 'Effective permissions', icon: Icon.check },
-      { label: 'Access audit log', icon: Icon.file },
+      { path: '/settings/audit', label: 'Access audit log', icon: Icon.file },
       { path: '/settings/area-owners', label: 'Area owners', icon: Icon.users },
     ],
   },
 ];
 
 /** A page with its own sub-menu (Configuration, Settings & roles): searchable on wide screens, a dropdown on small ones. */
-export function SectionLayout({ groups }: { groups: Group[] }) {
+export function SectionLayout({ groups: all }: { groups: Group[] }) {
   const [q, setQ] = useState('');
+  // Module permissions can hide a page or make it read-only for the person's roles.
+  const pages = useMyNav().data?.pages ?? {};
+  const accessOf = (path?: string) => (path ? pages[path.replace(/^\//, '')] : undefined);
+  const groups = all.map((g) => ({ ...g, items: g.items.filter((i) => accessOf(i.path) !== 'hidden') })).filter((g) => g.items.length);
   const match = (l: string) => l.toLowerCase().includes(q.trim().toLowerCase());
   const nav = useNavigate();
   const { pathname } = useLocation();
@@ -125,7 +130,22 @@ export function SectionLayout({ groups }: { groups: Group[] }) {
         })}
       </aside>
       <section className="settings-main">
-        <Outlet />
+        {accessOf(pathname) === 'hidden' ? (
+          <div className="card" style={{ padding: '32px 24px', gap: 8, alignItems: 'flex-start' }}>
+            <span className="icon-circle">{Icon.shield}</span>
+            <b style={{ fontSize: 16, color: 'var(--fg-1)' }}>This page isn’t available to you</b>
+            <span style={{ fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>Your roles don’t include it. Ask an HR admin if you need it.</span>
+          </div>
+        ) : accessOf(pathname) === 'view' ? (
+          <>
+            <div className="ep-viewonly">{Icon.shield} View only · your roles can see this page but not change it</div>
+            <fieldset disabled className="ep-ro">
+              <Outlet />
+            </fieldset>
+          </>
+        ) : (
+          <Outlet />
+        )}
       </section>
     </div>
   );
@@ -138,7 +158,7 @@ export function AccessComingNext() {
       <span className="icon-circle">{Icon.shield}</span>
       <b style={{ fontSize: 16, color: 'var(--fg-1)' }}>Settings & roles</b>
       <span style={{ fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
-        Roles, permissions, role assignments, field security and the access audit log live here. These screens are coming next. Departments, locations and employment types are under Configuration.
+        This page isn’t built yet. Roles, module permissions, role assignments, field security and the access audit log are in the menu on the left; departments, locations and employment types are under Configuration.
       </span>
     </div>
   );

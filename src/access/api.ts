@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, del, get, post } from '../lib/http';
+import { api, blob, del, get, post } from '../lib/http';
 
 export type Role = { id: string; key: string; name: string; description: string | null; system: boolean };
 export type Scope = 'OWN' | 'TEAM' | 'DEPARTMENT' | 'LOCATION' | 'ORGANIZATION';
@@ -8,6 +8,21 @@ export type User = { id: string; employeeId: string; externalSubject: string | n
 export type UserRole = { id: string; roleId: string; roleKey: string; roleName: string; scope: Scope; scopeRef: string | null };
 export type Delegation = { id: string; fromUserId: string; toUserId: string; module: string; startsAt: string; endsAt: string; reason: string | null };
 export type AreaOwners = { roles: { id: string; key: string; name: string }[]; areas: { key: string; name: string; roleIds: string[]; superAdminAlways: boolean }[]; canEdit: boolean };
+export type NavMenu = { key: string; label: string; portal: 'admin' | 'ess'; sub: string; module: string | null; locked: boolean; on: boolean; changed: boolean; viaEmployee: boolean };
+export type PageAccess = 'edit' | 'view' | 'hidden';
+export type RoleNav = {
+  role: { id: string; key: string; name: string };
+  allAccess: boolean;
+  canEdit: boolean;
+  menus: NavMenu[];
+  profileTabs: { key: string; label: string }[];
+  tabs: Record<string, boolean>;
+  pages: Record<string, PageAccess>;
+};
+export type MyNav = { menus: string[]; hiddenTabs: string[]; pages: Record<string, 'view' | 'hidden'> };
+export type AuditKind = 'Roles' | 'Assignments' | 'Permissions' | 'Relationships' | 'Settings';
+export type AuditEntry = { id: string; at: string; by: string; kind: AuditKind; act: string; target: string; det: string };
+export type AuditPage = { counts: Record<'All' | AuditKind, number>; total: number; page: number; size: number; items: AuditEntry[] };
 type Person = { id: string; name: string; initials: string; title?: string; department?: { id: string; name: string }; photoUrl?: string };
 
 /** Modules a role can be given access to, in the backend's keys, with the names the UI shows. */
@@ -56,7 +71,21 @@ export const accessApi = {
   areaOwners: () => get<AreaOwners>('/config/area-owners'),
   setAreaOwners: (areaKey: string, roleIds: string[]) => api<AreaOwners>(`/config/area-owners/${areaKey}`, { method: 'PUT', body: { roleIds } }),
   people: () => get<{ items: Person[] }>('/employees?size=200'),
+  myNav: () => get<MyNav>('/access/nav/me'),
+  roleNav: (roleId: string) => get<RoleNav>(`/access/nav/roles/${roleId}`),
+  setNav: (roleId: string, b: { area: 'menu' | 'tab' | 'page'; key?: string; keys?: string[]; label?: string; value: string }) => api<RoleNav>(`/access/nav/roles/${roleId}`, { method: 'PUT', body: b }),
+  audit: (p: { kind?: string; q?: string; page?: number; size?: number }) => get<AuditPage>(`/access/audit?${qs(p)}`),
+  auditCsv: (p: { kind?: string; q?: string }) => blob(`/access/audit/export?${qs(p)}`),
 };
+
+const qs = (p: Record<string, string | number | undefined>) =>
+  new URLSearchParams(Object.entries(p).filter(([, v]) => v !== undefined && v !== '' && v !== 'All').map(([k, v]) => [k, String(v)])).toString();
+
+/**
+ * The signed-in person's menus from Module permissions. If the call fails (an older API, or no access) everything
+ * stays visible: the API still checks every request, this only tidies the menus.
+ */
+export const useMyNav = () => useQuery({ queryKey: ['access', 'nav', 'me'], queryFn: accessApi.myNav, staleTime: 5 * 60_000, retry: false });
 
 export const useRoles = () => useQuery({ queryKey: ['access', 'roles'], queryFn: accessApi.roles, staleTime: 60_000 });
 

@@ -1,3 +1,5 @@
+import { AuditLogPage } from '../access/AuditLogPage';
+import { ModulePermissionsPage } from '../access/ModulePermissionsPage';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { GuestOnly, RequireAuth } from '../auth/guards';
 import { ActivatePage } from '../pages/ActivatePage';
@@ -100,6 +102,8 @@ export function App() {
             <Route path="field-security" element={<FieldSecurityPage />} />
             <Route path="effective" element={<EffectivePage />} />
             <Route path="area-owners" element={<AreaOwnersPage />} />
+            <Route path="module-permissions" element={<ModulePermissionsPage />} />
+            <Route path="audit" element={<AuditLogPage />} />
             <Route path="*" element={<AccessComingNext />} />
           </Route>
           {/* Earlier links to these pages lived under Settings. */}

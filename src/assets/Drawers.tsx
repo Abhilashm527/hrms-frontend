@@ -6,9 +6,9 @@ import { Icon } from '../components/icons';
 import { Overlay } from '../components/Overlay';
 import { BlockLoader } from '../components/Splash';
 import { errorText } from '../lib/http';
-import { assetApi, BADGE, fmtD, type HwDetail, type LicDetail, rupees, saveBlob, SLOT, type TimelineItem, val, WARRANTY } from './api';
+import { assetApi, BADGE, fmtD, type HwDetail, type LicDetail, rupees, saveBlob, statusColor, type TimelineItem, val, WARRANTY } from './api';
 import { AssignDialog, RecoverDialog, RepairDialog, RepairedDialog, RetireDialog, SeatDialog } from './Dialogs';
-import { AI, fmtSize, Initials, tintOf, typeIcon } from './ui';
+import { AI, fmtSize, Initials, tintOf, typeIcon, useStatusHex } from './ui';
 
 type Done = (msg: string) => void;
 const stamp = (s?: string | null) => (s ? new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -247,6 +247,7 @@ function TimelineView({ load, csv, cat, chips, name }: { load: (o: string) => Pr
 
 export function HardwareDrawer({ id, onClose, onEdit, toast }: { id: string; onClose: () => void; onEdit: (d: HwDetail) => void; toast: Done }) {
   const q = useQuery({ queryKey: ['assets', 'hw', id], queryFn: () => assetApi.hw(id) });
+  const hexOf = useStatusHex();
   const qc = useQueryClient();
   const nav = useNavigate();
   const [tab, setTab] = useState('details');
@@ -276,7 +277,7 @@ export function HardwareDrawer({ id, onClose, onEdit, toast }: { id: string; onC
       code={d.tag}
       pills={
         <>
-          <Pill c={SLOT[d.status.color] ?? BADGE.paused}>{d.status.name}</Pill>
+          <Pill c={statusColor(d.status.color, hexOf(d.status.id))}>{d.status.name}</Pill>
           {d.category && (
             <Pill c={tintOf(d.category.name)} dot={false}>
               {d.category.name}

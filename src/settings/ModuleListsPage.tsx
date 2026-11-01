@@ -12,7 +12,7 @@ import { usePeople } from './OrgListsPages';
 import { SettingsHead } from './SettingsLayout';
 import { useBeforeUnload } from './cells';
 
-type Column = { key: string; label: string; type: 'text' | 'mono' | 'number' | 'select' | 'toggle' | 'color' | 'icon'; options: string[]; ref: string | null; refBy: 'id' | 'name' | null; required: boolean; unique: boolean };
+type Column = { key: string; label: string; type: 'text' | 'mono' | 'number' | 'select' | 'toggle' | 'color' | 'hex' | 'icon'; options: string[]; ref: string | null; refBy: 'id' | 'name' | null; required: boolean; unique: boolean };
 type Spec = { module: string; lists: { key: string; label: string; columns: Column[] }[] };
 type Row = Record<string, unknown> & { id?: string; lock?: boolean };
 type Data = { module: string; version: number; lists: Record<string, Row[]> };
@@ -107,7 +107,10 @@ function ModuleLists({ module, only }: { module: string; only?: string[] }) {
   const rows = cur ? (draft[cur.key] ?? []) : [];
   const setRow = (i: number, p: Row) => setDraft((d) => ({ ...d, [cur.key]: (d[cur.key] ?? []).map((r, k) => (k === i ? { ...r, ...p } : r)) }));
   const blank = (): Row => Object.fromEntries(cur.columns.filter((c) => c.key !== 'lock').map((c) => [c.key, c.type === 'toggle' ? c.key === 'active' : c.type === 'select' || c.type === 'icon' || c.type === 'color' ? (refOptions(c)[0]?.[0] ?? '') : '']));
-  const cols = cur?.columns.filter((c) => c.key !== 'lock') ?? [];
+  // a custom colour is edited inside the colour cell; a preview badge follows it, as in the design
+  const cols = (cur?.columns.filter((c) => c.key !== 'lock' && c.type !== 'hex') ?? []).flatMap((c) =>
+    c.type === 'color' ? [c, { key: '_preview', label: 'Preview', type: 'text', options: [], ref: null, refBy: null, required: false, unique: false } as Column] : [c],
+  );
   const forbidden = data.error instanceof ApiError && data.error.status === 403;
 
   return (
@@ -149,7 +152,7 @@ function ModuleLists({ module, only }: { module: string; only?: string[] }) {
           <div className="ml-bar">
             <span className="field-hint">{DESC[cur.key] ?? ''}</span>
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDraft((d) => ({ ...d, [cur.key]: [...(d[cur.key] ?? []), blank()] }))}>
-              + Add {cur.label.toLowerCase().replace(/s$/, '').replace(/ie$/, 'y')}
+              + Add {singular(cur.label)}
             </button>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -173,7 +176,13 @@ function ModuleLists({ module, only }: { module: string; only?: string[] }) {
                     <tr key={String(r.id ?? `new${i}`)} className={r.id ? '' : 'is-new'}>
                       {cols.map((c, ci) => (
                         <td key={c.key}>
-                          <CellFor c={c} v={r[c.key]} opts={refOptions(c)} err={e[c.key]} locked={locked && (c.key === 'key' || c.key === 'ftype')} set={(v) => setRow(i, { [c.key]: v })} />
+                          {c.key === '_preview' ? (
+                            <StatusPreview name={String(r.name ?? '')} slot={Number(r.color ?? 0)} hex={(r.colorHex as string) || null} />
+                          ) : c.type === 'color' ? (
+                            <ColorPick slot={Number(r.color ?? 0)} hex={(r.colorHex as string) || null} setSlot={(n) => setRow(i, { color: n, colorHex: '' })} setHex={(h) => setRow(i, { colorHex: h })} />
+                          ) : (
+                            <CellFor c={c} v={r[c.key]} opts={refOptions(c)} err={e[c.key]} locked={locked && (c.key === 'key' || c.key === 'ftype')} set={(v) => setRow(i, { [c.key]: v })} />
+                          )}
                           {ci === 0 && e._row && <span className="field-err">{e._row}</span>}
                         </td>
                       ))}
@@ -200,6 +209,54 @@ function ModuleLists({ module, only }: { module: string; only?: string[] }) {
         </div>
       )}
     </>
+  );
+}
+
+/** "Statuses" → status, "Categories" → category, "Types" → type. */
+const singular = (label: string) => {
+  const l = label.toLowerCase();
+  return /(ses|xes)$/.test(l) ? l.slice(0, -2) : /ies$/.test(l) ? `${l.slice(0, -3)}y` : /[^s]s$/.test(l) ? l.slice(0, -1) : l;
+};
+
+/** The design's six preset colours (text, tint): green, blue, amber, red, violet, slate. */
+export const CFG_COLORS: [string, string][] = [
+  ['#15803D', '#DCFCE7'],
+  ['#1D4ED8', '#DBEAFE'],
+  ['#B45309', '#FEF3C7'],
+  ['#B91C1C', '#FEE2E2'],
+  ['#6D28D9', '#EDE9FE'],
+  ['#475569', '#F1F5F9'],
+];
+const RAINBOW = 'conic-gradient(#EF4444, #F59E0B, #22C55E, #3B82F6, #A855F7, #EF4444)';
+
+/** Six round swatches plus a custom colour (the rainbow dot opens the colour picker; it shows the colour once chosen). */
+function ColorPick({ slot, hex, setSlot, setHex }: { slot: number; hex: string | null; setSlot: (n: number) => void; setHex: (h: string) => void }) {
+  return (
+    <span className="ml-swatches">
+      {CFG_COLORS.map(([fg], n) => (
+        <button
+          key={n}
+          type="button"
+          aria-label={`Colour ${n + 1}`}
+          aria-pressed={!hex && slot === n}
+          style={{ background: fg, boxShadow: !hex && slot === n ? `0 0 0 2px var(--bg), 0 0 0 4px ${fg}` : 'none' }}
+          onClick={() => setSlot(n)}
+        />
+      ))}
+      <label title="Custom colour" className="ml-custom" style={{ background: hex ?? RAINBOW, boxShadow: hex ? `0 0 0 2px var(--bg), 0 0 0 4px ${hex}` : 'inset 0 0 0 1px var(--border)' }}>
+        <input type="color" value={hex ?? CFG_COLORS[slot]?.[0] ?? '#1D4ED8'} onChange={(e) => setHex(e.target.value.toUpperCase())} aria-label="Custom colour" />
+      </label>
+    </span>
+  );
+}
+
+function StatusPreview({ name, slot, hex }: { name: string; slot: number; hex: string | null }) {
+  const [fg, bg] = hex ? [hex, `${hex}1F`] : (CFG_COLORS[slot] ?? CFG_COLORS[5]);
+  return (
+    <span className="ml-badge" style={{ color: fg, background: bg }}>
+      <i style={{ background: fg }} />
+      {(name || 'Status').toLowerCase()}
+    </span>
   );
 }
 

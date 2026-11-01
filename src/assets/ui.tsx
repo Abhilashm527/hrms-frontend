@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Avatar } from '../components/Avatar';
 import { Icon } from '../components/icons';
-import { BADGE, type Color, type DateState, fmtD, type Kpi, SLOT, WARRANTY } from './api';
+import { assetApi, BADGE, type Color, type DateState, fmtD, type Kpi, statusColor, WARRANTY } from './api';
 
 const svg = (d: ReactNode, size = 18) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -54,7 +55,17 @@ export function Badge({ color, children }: { color: Color; children: ReactNode }
     </span>
   );
 }
-export const StatusBadge = ({ s }: { s: { name: string; color: number; badge?: string } }) => <Badge color={SLOT[s.color] ?? BADGE[s.badge ?? 'paused']}>{s.name}</Badge>;
+/** Custom status colours from Asset configuration, by status id and by name. */
+export function useStatusHex(): (idOrName: string) => string | null {
+  const hw = useQuery({ queryKey: ['assets', 'config', 'hardware'], queryFn: () => assetApi.config('hardware'), staleTime: 60_000 });
+  const sw = useQuery({ queryKey: ['assets', 'config', 'software'], queryFn: () => assetApi.config('software'), staleTime: 60_000 });
+  const all = [...(hw.data?.statuses ?? []), ...(sw.data?.statuses ?? [])];
+  return (k) => all.find((x) => x.id === k || x.name === k)?.colorHex ?? null;
+}
+export function StatusBadge({ s }: { s: { id?: string; name: string; color: number; badge?: string } }) {
+  const hexOf = useStatusHex();
+  return <Badge color={statusColor(s.color, hexOf(s.id ?? s.name)) ?? BADGE[s.badge ?? 'paused']}>{s.name}</Badge>;
+}
 export const StateBadge = ({ s }: { s: { label: string; badge: string } }) => <Badge color={BADGE[s.badge] ?? BADGE.paused}>{s.label.charAt(0).toUpperCase() + s.label.slice(1)}</Badge>;
 
 /** The design's dfx-type-chip, tinted per type. */

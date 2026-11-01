@@ -134,7 +134,7 @@ export type AReq = {
 
 export type Field = { id: string; key: string; label: string; type: string; required: boolean; options: string[] };
 export type Config = {
-  statuses: { id: string; name: string; color: number; assignable: boolean }[];
+  statuses: { id: string; name: string; color: number; colorHex?: string | null; assignable: boolean }[];
   categories: { id: string; name: string; icon: string }[];
   types: { id: string; name: string; categoryId?: string; icon?: string; maxAgeYears?: number; billing?: string; unit?: string }[];
   ownership?: { id: string; name: string; captureFields: string[]; returnRequired: boolean }[];
@@ -246,9 +246,11 @@ export const SLOT: Color[] = [
   ['#1D4ED8', '#DBEAFE'],
   ['#B45309', '#FEF3C7'],
   ['#B91C1C', '#FEE2E2'],
-  ['#475569', '#F1F5F9'],
   ['#6D28D9', '#EDE9FE'],
+  ['#475569', '#F1F5F9'],
 ];
+/** A status colour: its custom hex when set, else the preset slot (same palette as Asset configuration). */
+export const statusColor = (slot: number, hex?: string | null): Color => (hex ? [hex, `${hex}1F`] : (SLOT[slot] ?? SLOT[5]));
 export const BADGE: Record<string, Color> = {
   healthy: ['#15803D', '#DCFCE7'],
   degraded: ['#B45309', '#FEF3C7'],

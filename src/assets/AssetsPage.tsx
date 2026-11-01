@@ -6,10 +6,10 @@ import { Icon } from '../components/icons';
 import { BlockLoader } from '../components/Splash';
 import { errorText } from '../lib/http';
 import { Pager } from '../leave/ui';
-import { type AReq, ago, assetApi, type HwDetail, type HwRow, type LicDetail, type LicRow, type Mode, rupees, SLOT, WARRANTY } from './api';
+import { type AReq, ago, assetApi, type HwDetail, type HwRow, type LicDetail, type LicRow, type Mode, rupees, statusColor, WARRANTY } from './api';
 import { AssignDialog, DecideDialog, HandOverDialog, ImportDialog, RecoverDialog, RepairedDialog, SeatDialog } from './Dialogs';
 import { HardwareDrawer, LicenseDrawer } from './Drawers';
-import { AI, Bars, BLUES, Card, CatPill, Donut, Initials, Kpis, StateBadge, StatusBadge, TypeChip, typeIcon, Usage } from './ui';
+import { AI, Bars, BLUES, Card, CatPill, Donut, Initials, Kpis, StateBadge, StatusBadge, TypeChip, typeIcon, Usage, useStatusHex } from './ui';
 import { HardwareWizard, SoftwareWizard } from './Wizards';
 
 type Tab = 'dashboard' | 'inventory' | 'available' | 'requests';
@@ -217,6 +217,7 @@ const KPI_ICONS = { total: AI.monitor, assigned: Icon.users, value: AI.rupee, wa
 function HwDashboard({ toast }: { toast: (m: string) => void }) {
   const q = useQuery({ queryKey: ['assets', 'hw-dash'], queryFn: assetApi.hwDash });
   const [act, setAct] = useState<Act>(null);
+  const hexOf = useStatusHex();
   if (q.isLoading) return <BlockLoader label="Loading the dashboard…" height={320} />;
   if (q.isError || !q.data) return <Alert>{errorText(q.error)}</Alert>;
   const d = q.data;
@@ -244,7 +245,7 @@ function HwDashboard({ toast }: { toast: (m: string) => void }) {
           {money ? (
             <Donut data={d.types.map((t, i) => ({ label: t.label, n: t.value ?? 0, v: rupees(t.value ?? 0), color: BLUES[(i * 2 + 1) % BLUES.length] }))} centerLabel="Total value" centerValue={rupees(value)} legendTitle="Type" />
           ) : (
-            <Donut data={d.byStatus.map((s) => ({ label: s.label, n: s.n, color: SLOT[s.color]?.[0] }))} centerLabel="Assets" centerValue={total} legendTitle="Status" />
+            <Donut data={d.byStatus.map((s) => ({ label: s.label, n: s.n, color: statusColor(s.color, hexOf(s.label))[0] }))} centerLabel="Assets" centerValue={total} legendTitle="Status" />
           )}
         </Card>
         <Card title="Available in stock" flush>

@@ -6,7 +6,7 @@ import { Overlay } from '../components/Overlay';
 import { BlockLoader } from '../components/Splash';
 import { errorText, fieldErrors } from '../lib/http';
 import { PersonPicker } from '../onboarding/shared';
-import { assetApi, type Extract, type Field as CfgField, type HwDetail, type LicDetail, type Mode, rupees, SLOT } from './api';
+import { assetApi, type Extract, type Field as CfgField, type HwDetail, type LicDetail, type Mode, rupees, statusColor } from './api';
 
 type Done = (msg: string, id?: string) => void;
 const SAMPLE_HW = `Dell Latitude 7450 laptop
@@ -338,7 +338,7 @@ export function HardwareWizard({ edit, onClose, onDone }: { edit?: HwDetail; onC
   const catName = c?.categories.find((x) => x.id === f?.categoryId)?.name ?? '';
   const fmt = c?.idFormats.find((x) => x.ownershipId === f?.ownershipId)?.fmt ?? 'CMP-{TYPE}-####';
   const tag = edit?.tag ?? fmt.replace('{TYPE}', typeName ? typeCode(typeName) : 'XXX');
-  const stColor = SLOT[status?.color ?? 4] ?? SLOT[4];
+  const stColor = statusColor(status?.color ?? 5, status?.colorHex);
 
   const mapped = (x: Extract) => {
     setExtract(x);

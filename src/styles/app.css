@@ -1744,3 +1744,11 @@ button.as-who:hover b { color: var(--brand); }
   .aw-mapped-r { grid-template-columns: 70px minmax(0, 1fr); }
   .aw-mapped-r b { grid-column: 1 / -1; }
 }
+
+/* configuration: colour swatches + custom colour + preview badge (design: cfg isColor / isBadge) */
+.ml-swatches { display: flex; gap: 8px; align-items: center; }
+.ml-swatches > button { all: unset; cursor: pointer; width: 16px; height: 16px; border-radius: 999px; flex-shrink: 0; }
+.ml-custom { position: relative; width: 16px; height: 16px; border-radius: 999px; cursor: pointer; flex-shrink: 0; }
+.ml-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+.ml-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.ml-badge i { width: 6px; height: 6px; border-radius: 999px; flex-shrink: 0; }

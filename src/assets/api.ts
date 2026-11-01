@@ -19,11 +19,12 @@ export type HwRow = {
   actions: { assign: boolean; recover: boolean; repaired: boolean };
 };
 export type HwList = { items: HwRow[]; page: number; size: number; total: number; facets: { types: { id: string; name: string; n: number }[]; statuses: { id: string; name: string; n: number }[] } };
-export type Kpi = { key: string; label: string; value: number | string; sub: string };
+export type Kpi = { key: string; label: string; value: number | string; sub: string; tone?: 'muted' | 'success' | 'warning' };
 export type Activity = { who: string; initials: string; text: string; at: string };
 export type Alert = { id: number; title: string; sub: string; severity: string; at: string };
 export type HwDash = {
   kpis: Kpi[];
+  types: { label: string; total: number; assigned: number; value?: number }[];
   byStatus: { label: string; color: number; n: number }[];
   byType: { label: string; n: number }[];
   deptAllocation: { department: string; n: number }[];
@@ -103,6 +104,8 @@ export type SwDash = {
   byType: { label: string; n: number }[];
   byState: { label: string; n: number }[];
   usage: { month: string; label: string; total: number; used: number }[];
+  categoryUsage: { categoryId: string | null; category: string | null; items: { id: string; name: string; used: number; seats: number | null }[] };
+  spendByCategory?: { label: string; annual: number }[];
   underused: { annualSavings: number; top: { id: string; name: string; used: number; seats: number; saving: number }[] };
   alerts: Alert[];
   activity: Activity[];
@@ -214,6 +217,7 @@ export const assetApi = {
     );
   },
 
+  markAlertsRead: (ids: number[]) => post<{ marked: number }>('/me/notifications/read', { ids }),
   mine: () => get<Mine>('/me/assets'),
   requestOptions: (kind: 'HARDWARE' | 'SOFTWARE') => get<{ items: { id: string; name: string }[]; fields: { key: string; label: string; type: string; required: boolean; options: string[]; helpText: string | null }[] }>(`/me/assets/request-options?kind=${kind}`),
   submitRequest: (b: unknown) => post<{ id: string; status: string }>('/me/assets/requests', b),

@@ -5,8 +5,8 @@ import { Icon } from '../components/icons';
 import { BlockLoader } from '../components/Splash';
 import { errorText, fieldErrors } from '../lib/http';
 import { Modal } from '../leave/ui';
-import { assetApi, fmtD, type Mine } from './api';
-import { Field, StateBadge } from './ui';
+import { assetApi, BADGE, fmtD, type Mine } from './api';
+import { Field } from './ui';
 
 const RS: Record<string, [string, string]> = {
   PENDING: ['Pending', 'degraded'],
@@ -39,10 +39,10 @@ export function MyAssetsPage() {
       <div className="rq-top">
         <span>
           <h1>My assets</h1>
-          <small>Hardware and software issued to you, and your requests</small>
+          <small>Equipment and software assigned to you</small>
         </span>
         <button type="button" className="btn btn-primary btn-sm" onClick={() => setAsking(true)}>
-          {Icon.plus} Request an asset
+          {Icon.plus} Request
         </button>
       </div>
       {err && <Alert>{err}</Alert>}
@@ -66,77 +66,65 @@ export function MyAssetsPage() {
 /** The three lists; also used read-only on an employee's profile. */
 export function MineView({ data, onCancel }: { data: Mine; onCancel?: (id: string) => void }) {
   return (
-    <div className="as-mine">
-      <section className="as-card">
-        <div className="as-card-h">
-          <b>Hardware</b>
-          <span className="dfx-count">{data.hardware.length}</span>
-        </div>
-        <div className="as-card-b">
-          {data.hardware.length === 0 && <div className="as-empty sm">No hardware issued</div>}
+    <div className="em-wrap">
+      <div className="em-grid">
+        <section className="em-card">
+          <header>Hardware</header>
           {data.hardware.map((h) => (
-            <div key={h.id} className="as-mrow">
-              <span className="as-type">{h.type}</span>
-              <span className="as-two">
+            <div key={h.id} className="em-hw">
+              <span>
                 <b>{h.model}</b>
-                <small>
-                  {h.tag} · S/N {h.serial}
-                </small>
+                <code>{h.tag}</code>
               </span>
-              <span className="as-two r">
-                <small>Since {fmtD(h.since)}</small>
-                <small>{h.warrantyUntil ? `Warranty until ${fmtD(h.warrantyUntil)}` : 'No warranty on record'}</small>
-              </span>
+              <small>
+                {h.type} · S/N {h.serial} · since {fmtD(h.since)}
+                {h.warrantyUntil ? ` · warranty to ${fmtD(h.warrantyUntil)}` : ''}
+              </small>
             </div>
           ))}
-        </div>
-      </section>
-      <section className="as-card">
-        <div className="as-card-h">
-          <b>Software licenses</b>
-          <span className="dfx-count">{data.licences.length}</span>
-        </div>
-        <div className="as-card-b">
-          {data.licences.length === 0 && <div className="as-empty sm">No licenses assigned</div>}
+          {data.hardware.length === 0 && <div className="em-none">No hardware assigned</div>}
+        </section>
+        <section className="em-card">
+          <header>Software licences</header>
           {data.licences.map((l) => (
-            <div key={l.id} className="as-mrow">
-              <span className="as-type">App</span>
-              <span className="as-two">
+            <div key={l.id} className="em-lic">
+              <span>
                 <b>{l.name}</b>
                 <small>{l.lid}</small>
               </span>
-              <span className="as-two r">
-                <small>Since {fmtD(l.since)}</small>
-              </span>
+              <small>since {fmtD(l.since)}</small>
             </div>
           ))}
-        </div>
-      </section>
-      <section className="as-card wide">
-        <div className="as-card-h">
-          <b>Requests</b>
-        </div>
-        <div className="as-card-b">
-          {data.requests.length === 0 && <div className="as-empty sm">No requests yet</div>}
-          {data.requests.map((r) => (
-            <div key={r.id} className="as-mrow">
-              <span className="as-type">{r.kind === 'HARDWARE' ? 'Hardware' : 'Software'}</span>
-              <span className="as-two">
+          {data.licences.length === 0 && <div className="em-none">No licences assigned</div>}
+        </section>
+      </div>
+      <section className="em-card">
+        <header>My requests</header>
+        {data.requests.map((r) => {
+          const st = RS[r.status] ?? [r.status, 'paused'];
+          const c = BADGE[st[1]] ?? BADGE.paused;
+          return (
+            <div key={r.id} className="em-req">
+              <span>
                 <b>{r.item}</b>
                 <small>
-                  {fmtD(r.date)} · {r.reason}
+                  {r.kind === 'HARDWARE' ? 'Hardware' : 'Software'} · {r.reason}
                   {r.note ? ` · ${r.note}` : ''}
                 </small>
               </span>
-              <StateBadge s={{ label: RS[r.status]?.[0] ?? r.status, badge: RS[r.status]?.[1] ?? 'paused' }} />
+              <small>{fmtD(r.date)}</small>
+              <span className="em-st" style={{ color: c[0], background: c[1] }}>
+                {st[0]}
+              </span>
               {onCancel && r.status === 'PENDING' && (
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => onCancel(r.id)}>
                   Cancel
                 </button>
               )}
             </div>
-          ))}
-        </div>
+          );
+        })}
+        {data.requests.length === 0 && <div className="em-none">No requests yet</div>}
       </section>
     </div>
   );
@@ -152,7 +140,7 @@ function RequestDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: s
   const [err, setErr] = useState<string | null>(null);
   const qc = useQueryClient();
   const items = opts.data?.items ?? [];
-  const pick = item || items[0]?.id || '';
+  const pick = item;
   const m = useMutation({
     meta: { busy: 'Sending your request…' },
     mutationFn: () => assetApi.submitRequest({ kind, assetTypeId: kind === 'HARDWARE' ? pick : undefined, licenseId: kind === 'SOFTWARE' ? pick : undefined, reason: reason.trim(), fields: vals }),
@@ -188,9 +176,8 @@ function RequestDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: s
       }
     >
       {err && !Object.keys(fe).length && <Alert>{err}</Alert>}
-      <div className="lv-field">
-        <span>What kind</span>
-        <span className="lv-seg" role="group">
+      <div>
+        <span className="em-seg" role="group">
           {(
             [
               ['HARDWARE', 'Hardware'],
@@ -203,9 +190,10 @@ function RequestDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: s
           ))}
         </span>
       </div>
-      <Field label={kind === 'HARDWARE' ? 'Item' : 'Application'} required error={fe.item ?? fe.assetTypeId ?? fe.licenseId}>
-        <select className="input sm" value={pick} onChange={(e) => setItem(e.target.value)} disabled={!items.length}>
-          {items.length === 0 && <option value="">{opts.isLoading ? 'Loading…' : 'Nothing to request'}</option>}
+      {fe.item && <div className="em-err">Choose an item</div>}
+      <Field label="Item">
+        <select className="input sm" value={item} onChange={(e) => setItem(e.target.value)} disabled={!items.length}>
+          <option value="">{opts.isLoading ? 'Loading…' : items.length ? 'Select…' : 'Nothing to request'}</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
               {i.name}
@@ -213,7 +201,7 @@ function RequestDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: s
           ))}
         </select>
       </Field>
-      <Field label="Why you need it" required error={fe.reason}>
+      <Field label="Why do you need it?" error={fe.reason}>
         <textarea className="input sm" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
       </Field>
       {(opts.data?.fields ?? [])

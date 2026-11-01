@@ -1,3 +1,4 @@
+import { DocumentsPage } from '../documents/DocumentsPage';
 import { AuditLogPage } from '../access/AuditLogPage';
 import { ModulePermissionsPage } from '../access/ModulePermissionsPage';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -62,6 +63,7 @@ export function App() {
           <Route path="/directory" element={<EmployeesPage />} />
           <Route path="/leave" element={<LeavePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/me/assets" element={<MyAssetsPage />} />

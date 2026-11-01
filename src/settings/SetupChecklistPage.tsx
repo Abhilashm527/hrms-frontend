@@ -17,6 +17,13 @@ const ROUTES: Record<string, string> = {
   desigs: '/configuration/positions',
   locations: '/configuration/locations',
   etypes: '/configuration/employment-types',
+  titles: '/configuration/titles',
+  roles: '/settings/roles',
+  ep: '/settings/module-permissions',
+  fga: '/configuration/openfga',
+  assign: '/settings/assignments',
+  reporting: '/configuration/reporting-lines',
+  cfields: '/configuration/custom-fields',
 };
 
 export function SetupChecklistPage() {

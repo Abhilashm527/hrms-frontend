@@ -32,7 +32,11 @@ export type SignedIn = {
 
 type State = { token: string; expiresAt: number; user: User; landing: Landing } | null;
 
-type Message = { type: 'signed-in'; token: string; expiresAt: number; user: User; landing: Landing } | { type: 'signed-out'; reason?: string };
+type Message =
+  | { type: 'signed-in'; token: string; expiresAt: number; user: User; landing: Landing }
+  | { type: 'signed-out'; reason?: string }
+  /** A tab that just opened asks the others for the session, so it doesn't spend the refresh cookie. */
+  | { type: 'hello' };
 
 const LOCK = 'hrms-refresh';
 const REFRESH_EARLY_MS = 60_000;
@@ -103,8 +107,32 @@ channel?.addEventListener('message', (e: MessageEvent<Message>) => {
     set({ token: m.token, expiresAt: m.expiresAt, user: m.user, landing: m.landing });
   } else if (m.type === 'signed-out') {
     set(null, m.reason);
+  } else if (m.type === 'hello' && state && state.expiresAt - Date.now() > REFRESH_EARLY_MS) {
+    channel?.postMessage({ type: 'signed-in', ...state } satisfies Message);
   }
 });
+
+/**
+ * For a tab that just opened: borrow the access token from a tab that already has one. Resolves true when another tab answered
+ * within {@code waitMs}; otherwise the caller refreshes with the cookie as usual.
+ */
+export function borrow(waitMs = 400): Promise<boolean> {
+  if (!channel || state) return Promise.resolve(!!state);
+  return new Promise((resolve) => {
+    const off = subscribe((s) => {
+      if (s) {
+        clearTimeout(t);
+        off();
+        resolve(true);
+      }
+    });
+    const t = setTimeout(() => {
+      off();
+      resolve(!!state);
+    }, waitMs);
+    channel.postMessage({ type: 'hello' } satisfies Message);
+  });
+}
 
 export class SessionEnded extends Error {
   constructor(

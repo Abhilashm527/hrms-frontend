@@ -19,6 +19,21 @@ type AuthValue = {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+/**
+ * Restore the session after a reload. Only a definite "signed out" from the API ends it; a network error or a 5xx (the API waking
+ * up, a proxy timeout) is retried a few times instead of dropping the person on the sign-in page with a still-valid session.
+ */
+async function restore(): Promise<unknown> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await session.refresh();
+    } catch (e) {
+      if (e instanceof session.SessionEnded || attempt >= 4) throw e;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(session.current());
   const [status, setStatus] = useState<Status>('booting');
@@ -40,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session.current()) {
       setStatus('signed-in');
     } else if (session.maybeSignedIn() || location.pathname === '/signed-in') {
+      // Another open tab usually has a valid token already: take it instead of spending the refresh cookie.
       session
-        .refresh()
+        .borrow()
+        .then((got) => (got ? session.current() : restore()))
         .catch(() => undefined)
         .finally(() => setStatus(session.current() ? 'signed-in' : 'signed-out'));
     } else {

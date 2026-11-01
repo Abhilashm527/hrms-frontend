@@ -294,7 +294,7 @@ export function TeamsIntegrationPage() {
           <span className="pill no-dot pill-muted">Not connected</span>
         </div>
         <Alert kind="info">
-          Connecting Teams needs the server side first: an Entra app registration with permission to post channel messages (ChannelMessage.Send), and storage for which channel gets which event. Until then nothing is posted to Teams. Ask me to add it and this page will connect.
+          Connecting Teams needs the server side first: an Entra app registration with permission to post channel messages (ChannelMessage.Send), and storage for which channel gets which event. Until then nothing is posted to Teams; this page connects once that is in place.
         </Alert>
         <div className="lv-card">
           <div className="lc-head">

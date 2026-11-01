@@ -10,11 +10,11 @@ import { ConfigInput, Drawer, FieldShell, PersonPicker, useDepartments, useEmplo
 import { BlockLoader } from '../components/Splash';
 
 /** Keys the API stores on the hire itself; anything else from the form goes in `extra`. */
-const SYSTEM = ['first', 'last', 'pemail', 'phone', 'gender', 'dob', 'title', 'dept', 'mgr', 'loc', 'etype', 'doj', 'prob', 'ctc', 'contractEnd'];
-const HARD_REQUIRED: Record<string, string> = { first: 'First name', pemail: 'Personal email', title: 'Job title', dept: 'Department', mgr: 'Reports to', loc: 'Work location', etype: 'Employment type', doj: 'Date of joining' };
+export const SYSTEM = ['first', 'last', 'pemail', 'phone', 'gender', 'dob', 'title', 'dept', 'mgr', 'loc', 'etype', 'doj', 'prob', 'ctc', 'contractEnd'];
+export const HARD_REQUIRED: Record<string, string> = { first: 'First name', pemail: 'Personal email', title: 'Job title', dept: 'Department', mgr: 'Reports to', loc: 'Work location', etype: 'Employment type', doj: 'Date of joining' };
 
 /** Used when the organization hasn't configured the form steps. */
-const DEFAULT_STEPS: FormStep[] = [
+export const DEFAULT_STEPS: FormStep[] = [
   {
     key: 'personal',
     name: 'Personal',
@@ -49,6 +49,23 @@ const DEFAULT_STEPS: FormStep[] = [
   { key: 'invite', name: 'Invite', kind: 'DOCS_INVITE', locked: true, fields: [] },
 ];
 
+/** The configured steps, making sure every field the API insists on is somewhere in the form. */
+export function hireSteps(configured?: FormStep[]): FormStep[] {
+  const s = (configured?.length ? configured : DEFAULT_STEPS).map((x) => ({ ...x, fields: [...x.fields] }));
+  const present = new Set(s.flatMap((x) => x.fields.map((f) => f.key)));
+  const missing = Object.entries(HARD_REQUIRED).filter(([k]) => !present.has(k));
+  if (missing.length) {
+    let target = s.filter((x) => x.kind === 'FIELDS').at(-1);
+    if (!target) {
+      target = { key: 'job', name: 'Job', kind: 'FIELDS', locked: true, fields: [] };
+      s.unshift(target);
+    }
+    missing.forEach(([key, label]) => target!.fields.push({ key, label, type: key === 'doj' ? 'DATE' : 'TEXT', required: true, options: [] }));
+  }
+  if (!s.some((x) => x.kind === 'DOCS_INVITE')) s.push(DEFAULT_STEPS[3]);
+  return s;
+}
+
 const SUBTITLE: Record<string, string> = { M365: 'Work account', DOCS_INVITE: 'Documents & email' };
 
 export function NewHireDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
@@ -71,23 +88,7 @@ export function NewHireDrawer({ onClose, onCreated }: { onClose: () => void; onC
   const titles = useTitles(v.dept || undefined);
   const titleListed = !!titles.data?.some((t) => t.name.toLowerCase() === (v.title ?? '').toLowerCase());
 
-  // The configured steps, making sure every field the API insists on is somewhere in the form.
-  const steps = useMemo(() => {
-    const configured = form.data?.steps?.length ? form.data.steps : DEFAULT_STEPS;
-    const s = configured.map((x) => ({ ...x, fields: [...x.fields] }));
-    const present = new Set(s.flatMap((x) => x.fields.map((f) => f.key)));
-    const missing = Object.entries(HARD_REQUIRED).filter(([k]) => !present.has(k));
-    if (missing.length) {
-      let target = s.filter((x) => x.kind === 'FIELDS').at(-1);
-      if (!target) {
-        target = { key: 'job', name: 'Job', kind: 'FIELDS', locked: true, fields: [] };
-        s.unshift(target);
-      }
-      missing.forEach(([key, label]) => target!.fields.push({ key, label, type: key === 'doj' ? 'DATE' : 'TEXT', required: true, options: [] }));
-    }
-    if (!s.some((x) => x.kind === 'DOCS_INVITE')) s.push(DEFAULT_STEPS[3]);
-    return s;
-  }, [form.data]);
+  const steps = useMemo(() => hireSteps(form.data?.steps), [form.data]);
 
   const cur = steps[Math.min(step, steps.length - 1)];
 

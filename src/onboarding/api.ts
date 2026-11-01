@@ -75,6 +75,8 @@ export type HireDetail = HireRow & {
   employeeId: string | null;
   cancelledAt: string | null;
   permissions: { canEdit: boolean; canJoin: boolean; canCancel: boolean; canViewCtc: boolean };
+  /** Values of the custom fields added to the new hire form in Configuration. */
+  extraPanel?: { sections: { name: string; fields: { key: string; value: unknown }[] }[] } | null;
 };
 
 export type DocStatus = 'MISSING' | 'SUBMITTED' | 'VERIFIED' | 'REJECTED';
@@ -129,7 +131,8 @@ export const onboardingApi = {
   upnCheck: (user: string, hireId?: string) => get<{ upn: string; available: boolean; suggestion: string | null }>(`/onboarding/upn-check?${new URLSearchParams({ user, ...(hireId ? { hireId } : {}) })}`),
   invitePreview: (body: NewHireBody) => post<{ to: string | null; cc: string | null; subject: string; html: string; dueDate: string | null }>('/onboarding/invite-preview', body),
   create: (body: NewHireBody, invite: boolean) => post<HireDetail>(`${H}?invite=${invite}`, body),
-  update: (id: string, values: Record<string, unknown>, version: number) => api<HireDetail>(`${H}/${id}`, { method: 'PATCH', body: { values }, headers: { 'If-Match': `"${version}"` } }),
+  update: (id: string, values: Record<string, unknown>, version: number, force = false, extra?: Record<string, unknown>) =>
+    api<HireDetail>(`${H}/${id}${force ? '?force=true' : ''}`, { method: 'PATCH', body: extra ? { values, extra } : { values }, headers: { 'If-Match': `"${version}"` } }),
   invite: (id: string) => post<{ sentTo: string; link: string }>(`${H}/${id}/invite`),
   resend: (id: string) => post<{ sentTo: string; link: string }>(`${H}/${id}/invite/resend`),
   remind: (id: string) => post<unknown>(`${H}/${id}/remind`, {}),

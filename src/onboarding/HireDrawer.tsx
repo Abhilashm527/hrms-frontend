@@ -1,3 +1,4 @@
+import { EditHireDialog } from './EditHireDialog';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -157,7 +158,7 @@ export function HireDrawer({ id, onClose }: { id: string; onClose: () => void })
         ))}
       </div>
       <div className="drawer-body" style={{ background: 'var(--bg-2)' }}>
-        {tab === 'overview' && <Overview h={h} run={run} busy={act.isPending} />}
+        {tab === 'overview' && <Overview h={h} run={run} busy={act.isPending} onEdited={setToast} />}
         {tab === 'documents' && <Documents h={h} docs={docs.data} loading={docs.isLoading} run={run} busy={act.isPending} setAsk={setAsk} />}
         {tab === 'details' && <Details id={id} />}
         {tab === 'checklist' && <Checklist id={id} />}
@@ -190,8 +191,10 @@ function Card({ title, icon, right, children }: { title: string; icon?: ReactNod
   );
 }
 
-function Overview({ h, run, busy }: { h: HireDetail; run: Run; busy: boolean }) {
+function Overview({ h, run, busy, onEdited }: { h: HireDetail; run: Run; busy: boolean; onEdited: (msg: string) => void }) {
   const j = h.job;
+  const [editing, setEditing] = useState(false);
+  const canEdit = h.permissions.canEdit && h.status !== 'JOINED' && !h.cancelledAt;
   const kv: [string, ReactNode][] = [
     ['Employee type', j.employmentType.name],
     ['Department', j.department.name],
@@ -206,7 +209,17 @@ function Overview({ h, run, busy }: { h: HireDetail; run: Run; busy: boolean }) 
   ];
   return (
     <div className="split" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))' }}>
-      <Card title="Job details" icon={Icon.briefcase}>
+      <Card
+        title="Job details"
+        icon={Icon.briefcase}
+        right={
+          canEdit ? (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+              Edit
+            </button>
+          ) : undefined
+        }
+      >
         <div className="kv">
           {kv.map(([k, val]) => (
             <div key={k}>
@@ -216,6 +229,7 @@ function Overview({ h, run, busy }: { h: HireDetail; run: Run; busy: boolean }) 
           ))}
         </div>
       </Card>
+      {editing && <EditHireDialog h={h} onClose={() => setEditing(false)} onSaved={(m) => (setEditing(false), onEdited(m))} />}
       <M365Card h={h} run={run} busy={busy} />
       <Card title="Invitation" icon={Icon.mail}>
         <div className="card-body">

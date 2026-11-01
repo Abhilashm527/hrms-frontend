@@ -35,7 +35,7 @@ const DEFAULT_STEPS: FormStep[] = [
     kind: 'FIELDS',
     locked: true,
     fields: [
-      { key: 'title', label: 'Job title', type: 'TEXT', required: true, options: [] },
+      { key: 'title', label: 'Job title', type: 'SELECT', required: true, options: [] },
       { key: 'dept', label: 'Department', type: 'SELECT', required: true, options: [] },
       { key: 'mgr', label: 'Reports to', type: 'SELECT', required: true, options: [] },
       { key: 'loc', label: 'Work location', type: 'SELECT', required: true, options: [] },
@@ -69,6 +69,7 @@ export function NewHireDrawer({ onClose, onCreated }: { onClose: () => void; onC
   const locs = useLocations();
   const etypes = useEmploymentTypes();
   const titles = useTitles(v.dept || undefined);
+  const titleListed = !!titles.data?.some((t) => t.name.toLowerCase() === (v.title ?? '').toLowerCase());
 
   // The configured steps, making sure every field the API insists on is somewhere in the form.
   const steps = useMemo(() => {
@@ -254,12 +255,22 @@ export function NewHireDrawer({ onClose, onCreated }: { onClose: () => void; onC
       case 'title':
         input = (
           <>
-            <input className="input sm" list="title-options" value={v.title ?? ''} onChange={(x) => set('title', x.target.value)} aria-invalid={!!e} />
-            <datalist id="title-options">
+            {/* Titles come from Configuration → Titles, narrowed to the department (its own, a parent's, or any). */}
+            <select className="input sm" value={v.title ?? ''} onChange={(x) => set('title', x.target.value)} aria-invalid={!!e} disabled={titles.isLoading}>
+              <option value="">{titles.isLoading ? 'Loading titles…' : titles.data?.length ? 'Select a title' : 'No titles yet'}</option>
+              {v.title && !titleListed && <option value={v.title}>{v.title} · not in this department’s list</option>}
               {titles.data?.map((t) => (
-                <option key={t.id} value={t.name} />
+                <option key={t.id} value={t.name}>
+                  {t.positionName ? `${t.name} · ${t.positionName}` : t.name}
+                </option>
               ))}
-            </datalist>
+            </select>
+            {titles.data && !titles.data.length && (
+              <span className="field-hint">
+                Add job titles in <Link to="/configuration/titles">Configuration → Titles</Link> first.
+              </span>
+            )}
+            {v.title && titles.data && !titleListed && <span className="field-hint">Pick a title from the list; this one isn’t offered for the department.</span>}
           </>
         );
         break;

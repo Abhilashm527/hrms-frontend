@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMyNav } from '../access/api';
 import { Icon } from '../components/icons';
 
@@ -149,6 +149,18 @@ export function SectionLayout({ groups: all }: { groups: Group[] }) {
       </section>
     </div>
   );
+}
+
+/**
+ * Landing on a section opens its first page (Configuration → Employee profile), skipping any page Module permissions
+ * hides from the person.
+ */
+export function FirstPage({ groups }: { groups: Group[] }) {
+  const nav = useMyNav();
+  if (nav.isLoading) return null;
+  const pages = nav.data?.pages ?? {};
+  const first = groups.flatMap((g) => g.items).find((i) => i.path && pages[i.path.replace(/^\//, '')] !== 'hidden');
+  return first?.path ? <Navigate to={first.path} replace /> : <AccessComingNext />;
 }
 
 /** Settings & roles has no built page yet. */

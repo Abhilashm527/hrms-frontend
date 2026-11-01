@@ -24,7 +24,7 @@ import { FieldsFormsPage } from '../settings/fields/FieldsFormsPage';
 import { RolesPage } from '../access/RolesPage';
 import { AssignmentsPage } from '../access/AssignmentsPage';
 import { AreaOwnersPage, EffectivePage, FieldSecurityPage } from '../access/AccessPages';
-import { ACCESS_GROUPS, AccessComingNext, CONFIG_GROUPS, SectionLayout } from '../settings/SettingsLayout';
+import { ACCESS_GROUPS, AccessComingNext, CONFIG_GROUPS, FirstPage, SectionLayout } from '../settings/SettingsLayout';
 import { LeavePage } from '../leave/LeavePage';
 import { CalendarPage } from '../calendar/CalendarPage';
 import { InboxPage } from '../requests/InboxPage';
@@ -69,7 +69,7 @@ export function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/onboarding/:hireId" element={<OnboardingPage />} />
           <Route path="/configuration" element={<SectionLayout groups={CONFIG_GROUPS} />}>
-            <Route index element={<Navigate to="departments" replace />} />
+            <Route index element={<FirstPage groups={CONFIG_GROUPS} />} />
             <Route path="fields/:area" element={<FieldsFormsPage />} />
             <Route path="setup" element={<SetupChecklistPage />} />
             <Route path="organization" element={<OrganizationPage />} />

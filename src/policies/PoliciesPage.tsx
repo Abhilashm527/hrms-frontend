@@ -6,7 +6,7 @@ import { Icon } from '../components/icons';
 import { BlockLoader } from '../components/Splash';
 import { Modal } from '../leave/ui';
 import { errorText, fieldErrors } from '../lib/http';
-import { daysTo, dueTxt, fmtD, polApi, STATUS, type Category, type Row } from './api';
+import { daysTo, dueTxt, fmtD, polApi, STATUS, type Category, type Imported, type Row } from './api';
 import { PolicyDetail } from './PolicyDetail';
 import { CatChip, DOC_ICON as doc } from './shared';
 
@@ -189,12 +189,35 @@ function NewPolicy({ categories, policies, onClose, onCreated }: { categories: C
   const [tried, setTried] = useState(false);
   const [catDraft, setCatDraft] = useState<string | null>(null);
   const [catErr, setCatErr] = useState<string | null>(null);
+  // "Upload a file": the PDF or Word file is read first, so the name fills in and you see what was found
+  const [file, setFile] = useState<{ name: string; data: Imported } | null>(null);
+  const [reading, setReading] = useState(false);
+  const readFile = async (fl: File | undefined) => {
+    if (!fl) return;
+    setReading(true);
+    setFe({});
+    try {
+      const data = await polApi.importFile(fl);
+      setFile({ name: fl.name, data });
+      setF((x) => ({ ...x, name: x.name || data.title }));
+    } catch (e) {
+      setFile(null);
+      setFe({ file: fieldErrors(e).file ?? errorText(e) });
+    } finally {
+      setReading(false);
+    }
+  };
   useEffect(() => {
     if (opts.data && !f.ownerId) setF((x) => ({ ...x, ownerId: opts.data!.me }));
   }, [opts.data]); // eslint-disable-line react-hooks/exhaustive-deps
   const create = useMutation({
     meta: { busy: 'Creating the draft…' },
-    mutationFn: () => polApi.create({ ...f, name: f.name.trim(), ownerId: f.ownerId || null, approverId: null, cycleMonths: 12, ackRequired: true }),
+    mutationFn: async () => {
+      const upload = f.from === 'upload';
+      const r = await polApi.create({ ...f, from: upload ? 'blank' : f.from, name: f.name.trim(), ownerId: f.ownerId || null, approverId: null, cycleMonths: 12, ackRequired: true });
+      if (upload && file) await polApi.saveDraft(r.id, file.data.sections, `Imported from ${file.name}`);
+      return r;
+    },
     onSuccess: (r) => (qc.invalidateQueries({ queryKey: ['policies'] }), onCreated(r.id)),
     onError: (e) => setFe({ ...fieldErrors(e), _: errorText(e) }),
   });
@@ -211,7 +234,7 @@ function NewPolicy({ categories, policies, onClose, onCreated }: { categories: C
   const set = (k: keyof typeof f, v: string) => (setF((x) => ({ ...x, [k]: v })), setFe({}));
   const people = opts.data?.people ?? [];
   const nameBad = (tried && !f.name.trim()) || !!fe.name;
-  const go = () => (f.name.trim() ? create.mutate() : setTried(true));
+  const go = () => (f.from === 'upload' && !file ? setFe({ file: 'Choose a PDF or Word file' }) : f.name.trim() ? create.mutate() : setTried(true));
   return (
     <Modal
       width={520}
@@ -293,6 +316,7 @@ function NewPolicy({ categories, policies, onClose, onCreated }: { categories: C
           <span className="field-label">Start from</span>
           <select className="input sm" value={f.from} onChange={(e) => pickFrom(e.target.value)}>
             <option value="blank">Blank template</option>
+            <option value="upload">Upload a PDF or Word file…</option>
             {opts.data?.templates.map((t) => (
               <option key={t.key} value={t.key}>
                 {t.name} template
@@ -307,6 +331,23 @@ function NewPolicy({ categories, policies, onClose, onCreated }: { categories: C
               ))}
           </select>
         </label>
+        {f.from === 'upload' && (
+          <div className="po-wide po-upload">
+            <label className={`po-drop${reading ? ' busy' : ''}`}>
+              <input type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={(e) => void readFile(e.target.files?.[0])} />
+              {Icon.download}
+              <span>{reading ? 'Reading the file…' : file ? file.name : 'Choose a PDF or Word (.docx) file · up to 5 MB'}</span>
+            </label>
+            {fe.file && <span className="field-err">{fe.file}</span>}
+            {file && (
+              <span className="po-hint">
+                Found {file.data.sections.length} section{file.data.sections.length === 1 ? '' : 's'}
+                {file.data.pages > 1 ? ` on ${file.data.pages} pages` : ''}: {file.data.sections.slice(0, 5).map((x) => x.heading).join(' · ')}
+                {file.data.sections.length > 5 ? ' …' : ''}. You can edit everything before publishing.
+              </span>
+            )}
+          </div>
+        )}
         <span className="po-wide po-hint">The policy starts as a draft. Nothing is visible to employees until you publish v1.0.</span>
       </div>
     </Modal>

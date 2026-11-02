@@ -5,7 +5,7 @@ import { Icon } from '../components/icons';
 import { BlockLoader } from '../components/Splash';
 import { Modal } from '../leave/ui';
 import { errorText, fieldErrors } from '../lib/http';
-import { daysTo, downloadPdf, dueTxt, fmtD, polApi, STATUS, type Detail, type Section } from './api';
+import { daysTo, downloadPdf, dueTxt, fmtD, polApi, STATUS, type Detail, type Imported, type Section } from './api';
 import { PolicyPage, RichToolbar } from './doc/Doc';
 import { buildDoc, diffSecs, PAGE_DEFAULT, parseDoc, type DiffStats, type Page, type SecDiff } from './doc/model';
 import { APPLIES, CatChip, CYCLES, DOC_ICON, Toast, useToast } from './shared';
@@ -707,6 +707,36 @@ function DocEditor({
   const setPg = (np: Page) => (setPage(np), patch.mutate({ page: np }));
   const people = opts.data?.people ?? [];
 
+  // import a PDF or Word file into the draft
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [imp, setImp] = useState<{ name: string; data: Imported } | null>(null);
+  const [impMode, setImpMode] = useState<'replace' | 'append'>('replace');
+  const [reading, setReading] = useState(false);
+  const [impErr, setImpErr] = useState<string | null>(null);
+  const readFile = async (fl: File | undefined) => {
+    if (!fl) return;
+    setReading(true);
+    setImpErr(null);
+    try {
+      const data = await polApi.importFile(fl);
+      setImp({ name: fl.name, data });
+      setImpMode(parseDoc(doc).some((x) => x.body.replace(/<[^>]+>/g, '').trim()) ? 'append' : 'replace');
+    } catch (e) {
+      setImpErr(Object.values(fieldErrors(e))[0] ?? errorText(e));
+    } finally {
+      setReading(false);
+    }
+  };
+  const applyImport = () => {
+    if (!imp) return;
+    const add = buildDoc(imp.data.sections);
+    setDoc(impMode === 'replace' ? add : doc + add);
+    if (!note.trim() || note === 'Initial release') setNote(`Imported from ${imp.name}`);
+    setImp(null);
+    schedule();
+    onToast(`Imported ${imp.data.sections.length} section${imp.data.sections.length === 1 ? '' : 's'} from ${imp.name}`);
+  };
+
   const status = state === 'saving' ? 'Saving…' : state === 'dirty' ? 'Unsaved changes' : state === 'error' ? 'Not saved' : savedAt ? `Saved ${savedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : cur ? 'All changes saved' : 'First version · saved as you type';
 
   return (
@@ -739,6 +769,11 @@ function DocEditor({
               {cur ? 'Discard draft' : 'Delete policy'}
             </button>
           </div>
+          <button type="button" className="btn btn-secondary btn-sm po-import" disabled={reading} onClick={() => fileRef.current?.click()}>
+            {Icon.download} {reading ? 'Reading the file…' : 'Import PDF or Word…'}
+          </button>
+          <input ref={fileRef} type="file" hidden accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => (void readFile(e.target.files?.[0]), (e.target.value = ''))} />
+          {impErr && <small className="po-bad">{impErr}</small>}
         </section>
         <section className="po-card">
           <header>Details</header>
@@ -844,9 +879,49 @@ function DocEditor({
           onFooter={hf('footer')}
           headerRight={name}
           footerLabel={`v${dr.nextVersion} draft`}
-          placeholder="Start with a heading (H1) for the first section, then write…"
+          placeholder="Start with a heading (H1) for the first section, then write — or import a PDF or Word file"
         />
       </div>
+      {imp && (
+        <Modal
+          width={520}
+          title={`Import ${imp.name}`}
+          sub={`Found ${imp.data.sections.length} section${imp.data.sections.length === 1 ? '' : 's'}${imp.data.pages > 1 ? ` on ${imp.data.pages} pages` : ''}. Check the text after importing; formatting from the file is simplified.`}
+          onClose={() => setImp(null)}
+          foot={
+            <>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setImp(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={applyImport}>
+                Import
+              </button>
+            </>
+          }
+        >
+          <ol className="po-imp-list">
+            {imp.data.sections.map((x, i) => (
+              <li key={i}>
+                <b>{x.heading}</b>
+                <small>{x.body.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 110) || 'No text'}</small>
+              </li>
+            ))}
+          </ol>
+          <div className="po-choice" role="radiogroup" aria-label="Where to put it">
+            {(
+              [
+                ['replace', 'Replace the draft', 'The draft becomes the file’s text'],
+                ['append', 'Add to the end', 'Keep what’s written and add these sections after it'],
+              ] as const
+            ).map(([k, l, sub]) => (
+              <button key={k} type="button" role="radio" aria-checked={impMode === k} className={impMode === k ? 'on' : ''} onClick={() => setImpMode(k)}>
+                <b>{l}</b>
+                <small>{sub}</small>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

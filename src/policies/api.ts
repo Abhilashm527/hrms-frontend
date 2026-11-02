@@ -51,6 +51,9 @@ export type Detail = Omit<Row, 'draft' | 'ack' | 'versionCount' | 'updatedAt'> &
 export type Mine = { items: { id: string; name: string; category: { name: string; color: string }; version: string; effective: string; ackRequired: boolean; needsAck: boolean; acknowledgedAt: string | null }[]; pending: number };
 export type Reading = { id: string; name: string; category: Category; owner: string | null; version: string; sections: Section[]; effective: string; note: string | null; ackRequired: boolean; acknowledgedAt: string | null; page: Page; header: string; footer: string; appliesTo: string };
 
+/** A PDF or Word file read into sections (nothing saved yet). */
+export type Imported = { title: string; pages: number; sections: Section[] };
+
 const P = '/policies';
 export const polApi = {
   list: () => get<{ items: Row[]; categories: Category[]; staff: number }>(P),
@@ -76,6 +79,11 @@ export const polApi = {
   read: (id: string) => get<Reading>(`${P}/${id}/read`),
   acknowledge: (id: string) => post<{ version: string }>(`${P}/${id}/acknowledge`),
   remind: (id: string) => post<{ sent: number }>(`${P}/${id}/remind`),
+  importFile: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return post<Imported>(`${P}/import`, fd);
+  },
 };
 
 export async function downloadPdf(id: string, name: string, version?: string) {

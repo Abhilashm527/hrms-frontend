@@ -1,3 +1,5 @@
+import { PoliciesPage } from '../policies/PoliciesPage';
+import { MyPoliciesPage } from '../policies/MyPoliciesPage';
 import { DocumentsPage } from '../documents/DocumentsPage';
 import { AuditLogPage } from '../access/AuditLogPage';
 import { ModulePermissionsPage } from '../access/ModulePermissionsPage';
@@ -64,6 +66,8 @@ export function App() {
           <Route path="/leave" element={<LeavePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/policies" element={<PoliciesPage />} />
+          <Route path="/me/policies" element={<MyPoliciesPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/me/assets" element={<MyAssetsPage />} />

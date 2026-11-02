@@ -10,6 +10,8 @@ import { ConfigInput, Drawer, FieldShell, PersonPicker, useDepartments, useEmplo
 import { BlockLoader } from '../components/Splash';
 
 /** Keys the API stores on the hire itself; anything else from the form goes in `extra`. */
+/** sessionStorage key: {values, mgr} to start the form with. */
+export const HIRE_PREFILL = 'hrms-hire-prefill';
 export const SYSTEM = ['first', 'last', 'pemail', 'phone', 'gender', 'dob', 'title', 'dept', 'mgr', 'loc', 'etype', 'doj', 'prob', 'ctc', 'contractEnd'];
 export const HARD_REQUIRED: Record<string, string> = { first: 'First name', pemail: 'Personal email', title: 'Job title', dept: 'Department', mgr: 'Reports to', loc: 'Work location', etype: 'Employment type', doj: 'Date of joining' };
 
@@ -70,8 +72,24 @@ const SUBTITLE: Record<string, string> = { M365: 'Work account', DOCS_INVITE: 'D
 
 export function NewHireDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const qc = useQueryClient();
-  const [v, setV] = useState<Record<string, string>>({});
-  const [mgr, setMgr] = useState<Person | null>(null);
+  // A candidate hired in Recruiting arrives with their details filled in.
+  const [pre] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(HIRE_PREFILL);
+      return raw ? (JSON.parse(raw) as { values: Record<string, string>; mgr?: Person | null }) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [v, setV] = useState<Record<string, string>>(() => pre?.values ?? {});
+  const [mgr, setMgr] = useState<Person | null>(() => pre?.mgr ?? null);
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(HIRE_PREFILL);
+    } catch {
+      /* private mode */
+    }
+  }, []);
   const [step, setStep] = useState(0);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);

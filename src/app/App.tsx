@@ -1,3 +1,10 @@
+import { ReportsPage } from '../reports/ReportsPage';
+import { RecruitingPage } from '../recruiting/RecruitingPage';
+import { MyInterviewsPage } from '../recruiting/MyInterviewsPage';
+import { PerformancePage } from '../performance/PerformancePage';
+import { MyPerformancePage } from '../performance/MyPerformancePage';
+import { PayrollPage } from '../payroll/PayrollPage';
+import { MyPayPage } from '../payroll/MyPayPage';
 import { OrgChartPage } from '../org/OrgChartPage';
 import { MyOnboardingPage } from '../onboarding/MyOnboardingPage';
 import { MyAttendancePage } from '../leave/MyAttendancePage';
@@ -71,6 +78,13 @@ export function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/org" element={<OrgChartPage />} />
+          <Route path="/payroll" element={<PayrollPage />} />
+          <Route path="/me/pay" element={<MyPayPage />} />
+          <Route path="/performance" element={<PerformancePage />} />
+          <Route path="/me/performance" element={<MyPerformancePage />} />
+          <Route path="/recruiting" element={<RecruitingPage />} />
+          <Route path="/me/interviews" element={<MyInterviewsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/policies" element={<PoliciesPage />} />
           <Route path="/me/policies" element={<MyPoliciesPage />} />
           <Route path="/me/leave" element={<MyLeavePage />} />

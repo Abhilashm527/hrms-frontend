@@ -18,7 +18,7 @@ export const ADMIN_NAV: NavGroup[] = [
     ],
   },
   { label: 'Time & pay', items: [{ key: 'leave', path: '/leave', label: 'Leave & attendance', icon: Icon.cal }, { key: 'payroll', path: '/payroll', label: 'Payroll', icon: Icon.wallet }] },
-  { label: 'Talent', items: [{ key: 'recruiting', path: '/recruiting', label: 'Recruiting', icon: Icon.briefcase }, { key: 'performance', path: '/performance', label: 'Performance', icon: Icon.chart }] },
+  { label: 'Talent', items: [{ key: 'recruiting', path: '/recruiting', label: 'Recruiting', icon: Icon.briefcase }, { key: 'interviews', path: '/me/interviews', label: 'My interviews', icon: Icon.users }, { key: 'performance', path: '/performance', label: 'Performance', icon: Icon.chart }] },
   {
     label: 'Admin',
     items: [
@@ -40,6 +40,8 @@ export const ESS_NAV: NavGroup[] = [
       { key: 'e-leave', path: '/me/leave', label: 'Leave', icon: Icon.cal },
       { key: 'e-attendance', path: '/me/attendance', label: 'Attendance', icon: Icon.cal },
       { key: 'e-pay', path: '/me/pay', label: 'Pay', icon: Icon.wallet },
+      { key: 'e-performance', path: '/me/performance', label: 'Performance', icon: Icon.chart },
+      { key: 'e-interviews', path: '/me/interviews', label: 'Interviews', icon: Icon.briefcase },
     ],
   },
   {

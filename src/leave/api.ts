@@ -161,6 +161,15 @@ export type HolidayYear = {
   canEdit: boolean;
 };
 
+
+export type MyToday = { day: string; in: string | null; out: string | null; wfh: boolean; source: string | null; start: string; end: string; graceMinutes: number };
+export type FixReq = { id: string; status: 'PENDING' | 'REJECTED'; in: string | null; out: string | null; wfh: boolean; reason: string; decisionNote: string | null };
+export type MyDay = { day: string; status: string; label: string; kind: string; in: string | null; out: string | null; hours: string | null; wfh: boolean; source: string | null; note: string | null; request: FixReq | null; missingOut: boolean; canRegularise: boolean };
+export type Regularisation = { id: string; day: string; in: string | null; out: string | null; wfh: boolean; reason: string; status: string; createdAt: string; employee: { id: string; name: string; department: string }; decisionNote: string | null; decidedBy: string | null };
+export type TsRow = { projectId: string; name: string; hours: (number | null)[]; total: number };
+export type Timesheet = { weekStart: string; days: { date: string; weekend: boolean }[]; status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'; submittedAt: string | null; decidedAt: string | null; decidedBy: string | null; decisionNote: string | null; rows: TsRow[]; projects: { id: string; name: string }[]; editable: boolean };
+export type PendingSheet = { id: string; weekStart: string; submittedAt: string; employee: { id: string; name: string; department: string }; total: number; rows: TsRow[]; days: { date: string; weekend: boolean }[] };
+
 const L = '/leave';
 const qs = (o: Record<string, unknown>) => {
   const p = new URLSearchParams();
@@ -173,6 +182,20 @@ const qs = (o: Record<string, unknown>) => {
 };
 
 export const leaveApi = {
+  myToday: () => get<MyToday>('/attendance/me'),
+  checkIn: (wfh: boolean) => post<MyToday>('/attendance/check-in', { wfh }),
+  checkOut: () => post<MyToday>('/attendance/check-out'),
+  myLog: (days = 30) => get<{ today: MyToday; days: MyDay[]; approver: string }>(`/attendance/me/log?days=${days}`),
+  regularise: (b: { day: string; in: string | null; out: string | null; wfh: boolean; reason: string }) => post<{ id: string; approver: string }>('/attendance/regularisations', b),
+  cancelRegularisation: (id: string) => post<void>(`/attendance/regularisations/${id}/cancel`),
+  regularisations: (status = 'PENDING') => get<{ items: Regularisation[] }>(`/attendance/regularisations?status=${status}`),
+  decideRegularisation: (id: string, approve: boolean, note?: string) => post<{ status: string }>(`/attendance/regularisations/${id}/decide`, { approve, note }),
+  timesheet: (week?: string) => get<Timesheet>(`/attendance/timesheet${week ? `?week=${week}` : ''}`),
+  saveTimesheet: (week: string, rows: { projectId: string; hours: (number | null)[] }[]) => api<Timesheet>(`/attendance/timesheet?week=${week}`, { method: 'PUT', body: { rows } }),
+  submitTimesheet: (week: string) => post<Timesheet>(`/attendance/timesheet/submit?week=${week}`),
+  pendingTimesheets: () => get<{ items: PendingSheet[] }>('/attendance/timesheets/pending'),
+  decideTimesheet: (id: string, approve: boolean, note?: string) => post<{ status: string }>(`/attendance/timesheets/${id}/decide`, { approve, note }),
+  mine: (year: number) => get<{ year: number; balances: Balance[]; requests: ReqRow[] }>(`${L}/me?year=${year}`),
   requests: (o: Record<string, unknown>) => get<ReqList>(`${L}/requests?${qs(o)}`),
   request: (id: string) => get<ReqDetail>(`${L}/requests/${id}`),
   applyOptions: (employeeId?: string) => get<{ person: Person; types: ApplyType[] }>(`${L}/apply-options?${qs({ employeeId })}`),

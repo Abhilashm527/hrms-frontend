@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '../components/Alert';
 import { Icon } from '../components/icons';
@@ -40,7 +41,10 @@ const IMG = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
 export function DocumentsPage() {
   const qc = useQueryClient();
   const tree = useQuery({ queryKey: ['docs', 'tree'], queryFn: docsApi.tree });
-  const [cur, setCur] = useState<Where>('');
+  // links from search: ?folder=id opens a folder, &file=id also previews that file
+  const [sp, setSp] = useSearchParams();
+  const [cur, setCur] = useState<Where>(() => sp.get('folder') ?? '');
+  const [wantFile, setWantFile] = useState<string | null>(() => sp.get('file'));
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   const [sort, setSort] = useState<'name' | 'at' | 'size'>('name');
@@ -91,6 +95,13 @@ export function DocumentsPage() {
     queryFn: () => docsApi.items(virt ? { view: here as 'starred' | 'recent', q: term } : { folderId: here, q: term }),
     enabled: !!here,
   });
+  useEffect(() => {
+    if (!wantFile || !items.data) return;
+    const f = items.data.items.find((x) => x.id === wantFile);
+    if (f) setPreview(f);
+    setWantFile(null);
+    if (sp.has('folder') || sp.has('file')) setSp({}, { replace: true });
+  }, [wantFile, items.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (w: Where) => (setCur(w), setSel(new Set()), setQ(''), setTerm(''), setTreeOpen(false));
   const refresh = () => qc.invalidateQueries({ queryKey: ['docs'] });

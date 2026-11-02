@@ -5,10 +5,12 @@ import { Icon, Logo } from '../components/icons';
 import { ThemeButton } from '../components/ThemeButton';
 import { useTheme, type ThemeMode } from '../lib/theme';
 import { AccountModal } from './AccountModal';
+import { GlobalSearch } from './GlobalSearch';
 import { useMyNav } from '../access/api';
 import { ADMIN_NAV, ESS_NAV, allItems } from './nav';
 
 const SB_KEY = 'ivy-hrms-sb';
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 export function AppShell() {
   const { user, me, landing, signOut } = useAuth();
@@ -39,6 +41,22 @@ export function AppShell() {
   // On small screens the menu slides in; close it after moving to another page.
   useEffect(() => setNavOpen(false), [loc.pathname]);
   const [account, setAccount] = useState(false);
+  const [searching, setSearching] = useState(false);
+  // ⌘K / Ctrl+K anywhere, or "/" when not typing, opens search
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName));
+      if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearching((o) => !o);
+      } else if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setSearching(true);
+      }
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, []);
 
   useEffect(() => {
     const item = allItems(groups).find((i) => i.path === loc.pathname) ?? allItems(groups).find((i) => i.path !== '/' && loc.pathname.startsWith(i.path + '/'));
@@ -72,10 +90,10 @@ export function AppShell() {
           </div>
         </div>
         <div className="dfx-ghead-center">
-          <button className="dfx-ghead-search" type="button" title="Search is coming soon">
+          <button className="dfx-ghead-search" type="button" title="Search (⌘K)" onClick={() => setSearching(true)}>
             {Icon.search}
             <span className="dfx-ghead-search-ph">search people, requests…</span>
-            <kbd>⌘K</kbd>
+            <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
           </button>
         </div>
         <div className="dfx-ghead-side dfx-ghead-side-r">
@@ -205,6 +223,7 @@ export function AppShell() {
         </main>
       </div>
       {account && <AccountModal onClose={() => setAccount(false)} />}
+      {searching && <GlobalSearch admin={admin} onClose={() => setSearching(false)} />}
     </div>
   );
 }

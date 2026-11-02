@@ -1,3 +1,4 @@
+import { AttendanceApprovals } from './AttendanceApprovals';
 import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '../components/Alert';
@@ -55,6 +56,7 @@ export function AttendanceTab() {
 
   return (
     <div className="lv-stack">
+      <AttendanceApprovals />
       <PermissionsNotice errors={[board.error]} />
       <div className="lv-bar">
         <DayPicker day={day} setDay={setDay} today={today} />

@@ -1,3 +1,7 @@
+import { OrgChartPage } from '../org/OrgChartPage';
+import { MyOnboardingPage } from '../onboarding/MyOnboardingPage';
+import { MyAttendancePage } from '../leave/MyAttendancePage';
+import { MyLeavePage } from '../leave/MyLeavePage';
 import { PoliciesPage } from '../policies/PoliciesPage';
 import { MyPoliciesPage } from '../policies/MyPoliciesPage';
 import { DocumentsPage } from '../documents/DocumentsPage';
@@ -66,8 +70,12 @@ export function App() {
           <Route path="/leave" element={<LeavePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/org" element={<OrgChartPage />} />
           <Route path="/policies" element={<PoliciesPage />} />
           <Route path="/me/policies" element={<MyPoliciesPage />} />
+          <Route path="/me/leave" element={<MyLeavePage />} />
+          <Route path="/me/attendance" element={<MyAttendancePage />} />
+          <Route path="/me/onboarding" element={<MyOnboardingPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/me/assets" element={<MyAssetsPage />} />

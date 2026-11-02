@@ -45,7 +45,8 @@ export function InboxPage() {
   const [sp, setSp] = useSearchParams();
   const tab = (sp.get('tab') as Tab) || 'changes';
   const [closed, setClosed] = useState(false);
-  const [open, setOpen] = useState<string | null>(null);
+  // a link from search opens one request straight away
+  const [open, setOpen] = useState<string | null>(() => sp.get('open'));
   const [ask, setAsk] = useState<Ask | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);

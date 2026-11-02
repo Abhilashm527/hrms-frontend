@@ -51,13 +51,13 @@ function useToast() {
 export function PoliciesPage() {
   const [sp, setSp] = useSearchParams();
   const open = sp.get('open');
-  const go = (id: string | null) => setSp(id ? { open: id } : {});
-  return open ? <PolicyDetail key={open} id={open} onBack={() => go(null)} /> : <PolicyList onOpen={go} />;
+  const go = (id: string | null, edit = false) => setSp(id ? { open: id, ...(edit ? { edit: '1' } : {}) } : {});
+  return open ? <PolicyDetail key={open} id={open} startEditing={sp.get('edit') === '1'} onBack={() => go(null)} /> : <PolicyList onOpen={go} />;
 }
 
 // ====================================================================== list
 
-function PolicyList({ onOpen }: { onOpen: (id: string) => void }) {
+function PolicyList({ onOpen }: { onOpen: (id: string, edit?: boolean) => void }) {
   const q = useQuery({ queryKey: ['policies'], queryFn: polApi.list });
   const [filter, setFilter] = useState<Filter>('ALL');
   const [cat, setCat] = useState('ALL');
@@ -205,132 +205,142 @@ function PolicyList({ onOpen }: { onOpen: (id: string) => void }) {
           </div>
         )}
       </div>
-      {creating && <NewPolicy categories={q.data.categories} policies={all} onClose={() => setCreating(false)} onCreated={(id) => (setCreating(false), onOpen(id))} />}
+      {creating && <NewPolicy categories={q.data.categories} policies={all} onClose={() => setCreating(false)} onCreated={(id) => (setCreating(false), onOpen(id, true))} />}
       {cats && <CategoriesModal categories={q.data.categories} onClose={() => setCats(false)} />}
     </div>
   );
 }
 
+/** As in the UX: name, category (a new one can be added inline), owner and where to start from. Review cycle, approver and
+ * acknowledgement keep their defaults (12 months, none, required) and are changed later under Settings. */
 function NewPolicy({ categories, policies, onClose, onCreated }: { categories: Category[]; policies: Row[]; onClose: () => void; onCreated: (id: string) => void }) {
+  const qc = useQueryClient();
   const opts = useQuery({ queryKey: ['policies', 'new-options'], queryFn: polApi.newOptions });
-  const [f, setF] = useState({ name: '', categoryId: categories[0]?.id ?? '', ownerId: '', approverId: '', cycleMonths: 12, ackRequired: true, from: 'blank' });
+  const [f, setF] = useState({ name: '', categoryId: categories[0]?.id ?? '', ownerId: '', from: 'blank' });
   const [fe, setFe] = useState<Record<string, string>>({});
+  const [tried, setTried] = useState(false);
+  const [catDraft, setCatDraft] = useState<string | null>(null);
+  const [catErr, setCatErr] = useState<string | null>(null);
   useEffect(() => {
     if (opts.data && !f.ownerId) setF((x) => ({ ...x, ownerId: opts.data!.me }));
   }, [opts.data]); // eslint-disable-line react-hooks/exhaustive-deps
   const create = useMutation({
     meta: { busy: 'Creating the draft…' },
-    mutationFn: () => polApi.create({ ...f, name: f.name.trim(), approverId: f.approverId || null, ownerId: f.ownerId || null }),
-    onSuccess: (r) => onCreated(r.id),
+    mutationFn: () => polApi.create({ ...f, name: f.name.trim(), ownerId: f.ownerId || null, approverId: null, cycleMonths: 12, ackRequired: true }),
+    onSuccess: (r) => (qc.invalidateQueries({ queryKey: ['policies'] }), onCreated(r.id)),
     onError: (e) => setFe({ ...fieldErrors(e), _: errorText(e) }),
   });
-  const pickTemplate = (key: string) => {
+  const addCat = useMutation({
+    mutationFn: (name: string) => polApi.addCategory({ name, color: SWATCHES.find((c) => !categories.some((x) => x.color.toUpperCase() === c)) ?? SWATCHES[0] }),
+    onSuccess: (r) => (qc.invalidateQueries({ queryKey: ['policies'] }), setF((x) => ({ ...x, categoryId: r.id })), setCatDraft(null), setCatErr(null)),
+    onError: (e) => setCatErr(fieldErrors(e).name ?? errorText(e)),
+  });
+  const pickFrom = (key: string) => {
     const t = opts.data?.templates.find((x) => x.key === key);
     const c = t && categories.find((x) => x.name.toLowerCase() === t.category.toLowerCase());
     setF((x) => ({ ...x, from: key, name: x.name || t?.name || '', categoryId: c?.id ?? x.categoryId }));
   };
-  const set = (k: keyof typeof f, v: unknown) => (setF((x) => ({ ...x, [k]: v })), setFe({}));
+  const set = (k: keyof typeof f, v: string) => (setF((x) => ({ ...x, [k]: v })), setFe({}));
   const people = opts.data?.people ?? [];
+  const nameBad = (tried && !f.name.trim()) || !!fe.name;
+  const go = () => (f.name.trim() ? create.mutate() : setTried(true));
   return (
     <Modal
       width={520}
       title="New policy"
-      sub="Starts as a draft. Nobody sees it until you publish it."
       onClose={onClose}
       foot={
         <>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" disabled={create.isPending} onClick={() => (f.name.trim() ? create.mutate() : setFe({ name: 'Enter a name' }))}>
+          <button type="button" className="btn btn-primary btn-sm" disabled={create.isPending} onClick={go}>
             Create draft
           </button>
         </>
       }
     >
       {fe._ && !Object.keys(fe).some((k) => k !== '_') && <Alert>{fe._}</Alert>}
-      <label className="field">
-        <span className="field-label">Start from</span>
-        <select className="input sm" value={f.from} onChange={(e) => pickTemplate(e.target.value)}>
-          <option value="blank">Blank · Purpose, Scope, Policy, Exceptions</option>
-          <optgroup label="Templates">
-            {opts.data?.templates.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.name}
-              </option>
-            ))}
-          </optgroup>
-          {policies.some((p) => p.version) && (
-            <optgroup label="Copy a published policy">
-              {policies
-                .filter((p) => p.version)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    Copy of {p.name} · v{p.version}
-                  </option>
-                ))}
-            </optgroup>
-          )}
-        </select>
-      </label>
-      <label className="field">
-        <span className="field-label">
-          Name<span className="req">*</span>
-        </span>
-        <input className="input sm" value={f.name} autoFocus onChange={(e) => set('name', e.target.value)} aria-invalid={!!fe.name} placeholder="e.g. Leave policy" />
-        {fe.name && <span className="field-err">{fe.name}</span>}
-      </label>
-      <div className="form-grid">
-        <label className="field">
+      <div className="po-new">
+        <label className="field po-wide">
+          <span className="field-label">Policy name</span>
+          <input
+            className="input sm"
+            value={f.name}
+            autoFocus
+            onChange={(e) => set('name', e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && go()}
+            aria-invalid={nameBad}
+            placeholder="e.g. Parental leave"
+          />
+          {nameBad && <span className="field-err">{fe.name ?? 'Enter a name'}</span>}
+        </label>
+        <div className="field">
           <span className="field-label">Category</span>
-          <select className="input sm" value={f.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field-label">Review every</span>
-          <select className="input sm" value={f.cycleMonths} onChange={(e) => set('cycleMonths', Number(e.target.value))}>
-            {CYCLES.map((c) => (
-              <option key={c} value={c}>
-                {c} months
-              </option>
-            ))}
-          </select>
-        </label>
+          {catDraft != null ? (
+            <span className="po-catadd">
+              <input
+                className="input sm"
+                autoFocus
+                value={catDraft}
+                placeholder="New category name"
+                aria-invalid={!!catErr}
+                onChange={(e) => (setCatDraft(e.target.value), setCatErr(null))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && catDraft.trim()) addCat.mutate(catDraft.trim());
+                  if (e.key === 'Escape') (e.stopPropagation(), setCatDraft(null));
+                }}
+              />
+              <button type="button" className="btn btn-primary btn-sm" disabled={!catDraft.trim() || addCat.isPending} onClick={() => addCat.mutate(catDraft.trim())}>
+                Add
+              </button>
+              <button type="button" className="dfx-icon-btn" title="Cancel" onClick={() => (setCatDraft(null), setCatErr(null))}>
+                {Icon.close}
+              </button>
+            </span>
+          ) : (
+            <select className="input sm" value={f.categoryId} onChange={(e) => (e.target.value === '__new' ? setCatDraft('') : set('categoryId', e.target.value))}>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              <option value="__new">+ New category…</option>
+            </select>
+          )}
+          {catErr && <span className="field-err">{catErr}</span>}
+        </div>
         <label className="field">
           <span className="field-label">Owner</span>
           <select className="input sm" value={f.ownerId} onChange={(e) => set('ownerId', e.target.value)}>
-            <option value="">No owner</option>
+            {!f.ownerId && <option value="">—</option>}
             {people.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
-                {p.title ? ` · ${p.title}` : ''}
               </option>
             ))}
           </select>
         </label>
-        <label className="field">
-          <span className="field-label">Approver</span>
-          <select className="input sm" value={f.approverId} onChange={(e) => set('approverId', e.target.value)}>
-            <option value="">No approver</option>
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.title ? ` · ${p.title}` : ''}
+        <label className="field po-wide">
+          <span className="field-label">Start from</span>
+          <select className="input sm" value={f.from} onChange={(e) => pickFrom(e.target.value)}>
+            <option value="blank">Blank template</option>
+            {opts.data?.templates.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.name} template
               </option>
             ))}
+            {policies
+              .filter((p) => p.version)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  Copy of {p.name} · v{p.version}
+                </option>
+              ))}
           </select>
-          {fe.approverId && <span className="field-err">{fe.approverId}</span>}
         </label>
+        <span className="po-wide po-hint">The policy starts as a draft. Nothing is visible to employees until you publish v1.0.</span>
       </div>
-      <label className="po-check">
-        <input type="checkbox" checked={f.ackRequired} onChange={(e) => set('ackRequired', e.target.checked)} />
-        Employees must read and acknowledge it
-      </label>
     </Modal>
   );
 }
@@ -415,11 +425,11 @@ function CategoriesModal({ categories, onClose }: { categories: Category[]; onCl
 
 type Tab = 'overview' | 'text' | 'acks' | 'history' | 'settings';
 
-function PolicyDetail({ id, onBack }: { id: string; onBack: () => void }) {
+function PolicyDetail({ id, onBack, startEditing = false }: { id: string; onBack: () => void; startEditing?: boolean }) {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['policies', id], queryFn: () => polApi.detail(id) });
-  const [tab, setTab] = useState<Tab>('overview');
-  const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<Tab>(startEditing ? 'text' : 'overview');
+  const [editing, setEditing] = useState(startEditing);
   const [publishing, setPublishing] = useState(false);
   const [view, setView] = useState<string | null>(null);
   const [toast, setToast] = useToast();

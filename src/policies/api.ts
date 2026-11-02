@@ -1,4 +1,5 @@
 import { api, blob, del, get, post } from '../lib/http';
+import type { Page } from './doc/model';
 
 export type Section = { heading: string; body: string };
 export type Category = { id: string; name: string; color: string; count?: number };
@@ -42,9 +43,13 @@ export type Detail = Omit<Row, 'draft' | 'ack' | 'versionCount' | 'updatedAt'> &
   } | null;
   canManage: boolean;
   canApprove: boolean;
+  page: Page;
+  header: string;
+  footer: string;
+  appliesTo: string;
 };
 export type Mine = { items: { id: string; name: string; category: { name: string; color: string }; version: string; effective: string; ackRequired: boolean; needsAck: boolean; acknowledgedAt: string | null }[]; pending: number };
-export type Reading = { id: string; name: string; category: Category; owner: string | null; version: string; sections: Section[]; effective: string; note: string | null; ackRequired: boolean; acknowledgedAt: string | null };
+export type Reading = { id: string; name: string; category: Category; owner: string | null; version: string; sections: Section[]; effective: string; note: string | null; ackRequired: boolean; acknowledgedAt: string | null; page: Page; header: string; footer: string; appliesTo: string };
 
 const P = '/policies';
 export const polApi = {
@@ -70,6 +75,7 @@ export const polApi = {
   mine: () => get<Mine>(`${P}/mine`),
   read: (id: string) => get<Reading>(`${P}/${id}/read`),
   acknowledge: (id: string) => post<{ version: string }>(`${P}/${id}/acknowledge`),
+  remind: (id: string) => post<{ sent: number }>(`${P}/${id}/remind`),
 };
 
 export async function downloadPdf(id: string, name: string, version?: string) {

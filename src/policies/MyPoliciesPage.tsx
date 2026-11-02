@@ -6,7 +6,8 @@ import { Icon } from '../components/icons';
 import { BlockLoader } from '../components/Splash';
 import { errorText } from '../lib/http';
 import { downloadPdf, fmtD, polApi } from './api';
-import { CatChip, Reader } from './PoliciesPage';
+import { DocReader } from './PolicyDetail';
+import { CatChip } from './shared';
 
 /** Employee self-service: read each policy and acknowledge the current version. */
 export function MyPoliciesPage() {
@@ -128,7 +129,7 @@ function ReadPolicy({ id, onBack }: { id: string; onBack: () => void }) {
       </div>
       {err && <Alert>{err}</Alert>}
       {p.note && p.version !== '1.0' && <div className="po-whatsnew">What changed in v{p.version}: {p.note}</div>}
-      <Reader sections={p.sections} />
+      <DocReader sections={p.sections} page={p.page} header={p.header} footer={p.footer} name={p.name} version={p.version} />
       {p.ackRequired && !p.acknowledgedAt && (
         <div className="po-ack-foot">
           <span>By acknowledging you confirm you have read v{p.version} and will follow it.</span>
